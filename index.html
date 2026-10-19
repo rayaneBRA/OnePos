@@ -1,0 +1,2159 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ONEPOS - V15</title>
+    
+    <!-- رابط الأيقونة والشعار المربوطة بموقع جيت هاب -->
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#eb0029">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #0b0f19;
+            --bg-card: rgba(22, 27, 38, 0.85);
+            --border-color: #2a3447;
+            --text-main: #f3f4f6;
+            --accent-red: #eb0029;
+            --accent-green: #00ff88;
+            --accent-blue: #00d2ff;
+            --accent-purple: #a855f7;
+            --input-bg: #111827;
+        }
+
+        [data-theme="light"] {
+            --bg-body: #f0f2f5;
+            --bg-card: #ffffff;
+            --border-color: #e5e7eb;
+            --text-main: #1f2937;
+            --accent-red: #eb0029;
+            --accent-green: #10b981;
+            --accent-blue: #2563eb;
+            --accent-purple: #9333ea;
+            --input-bg: #f9fafb;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            margin: 0; padding: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 2px solid var(--accent-red); padding-bottom: 8px; margin-bottom: 12px;
+            position: sticky; top: 0; background-color: var(--bg-body); z-index: 1000;
+            padding-top: 8px;
+        }
+
+        .brand { font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        .brand span { color: var(--accent-red); }
+        .brand img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; }
+
+        .header-controls { display: flex; gap: 6px; }
+
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px);
+            z-index: 2000; justify-content: center; align-items: center; padding: 15px;
+        }
+        .modal-content {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 14px; padding: 20px; width: 100%; max-width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); text-align: inherit;
+            max-height: 85vh; overflow-y: auto;
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px;
+            font-weight: 800; font-size: 16px; color: var(--accent-blue);
+            position: sticky; top: -20px; background: var(--bg-card); padding-top: 20px; margin-top: -20px; z-index: 5;
+        }
+
+        .nav-tabs {
+            display: flex; gap: 6px; margin-bottom: 15px;
+            overflow-x: auto; padding-bottom: 6px; scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .nav-tabs::-webkit-scrollbar { height: 4px; }
+        .nav-tabs::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+
+        .tab-btn {
+            flex: 0 0 auto; padding: 8px 12px; border-radius: 8px;
+            border: 1px solid var(--border-color); background: var(--input-bg);
+            color: var(--text-main); font-weight: bold; cursor: pointer;
+            text-align: center; font-size: 12px; transition: 0.2s;
+            white-space: nowrap; display: inline-flex; align-items: center;
+            justify-content: center; gap: 4px;
+        }
+
+        .tab-btn.active { background: var(--accent-red); color: white; border-color: var(--accent-red); }
+
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 12px; }
+
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 12px; backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin-bottom: 12px;
+        }
+
+        h3 { margin-top: 0; color: var(--accent-blue); font-size: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
+
+        select, input, button {
+            width: 100%; padding: 8px 10px; margin: 4px 0; border-radius: 8px;
+            border: 1px solid var(--border-color); background: var(--input-bg);
+            color: var(--text-main); font-family: 'Cairo'; font-size: 13px;
+        }
+
+        .search-box-wrapper { position: relative; width: 100%; }
+        .custom-suggestions {
+            display: none; position: fixed;
+            background: var(--input-bg); border: 1px solid var(--accent-blue);
+            border-radius: 8px; max-height: 180px; overflow-y: auto; z-index: 99999;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+            left: 0; right: 0;
+        }
+        .suggestion-item {
+            padding: 8px 12px; border-bottom: 1px solid var(--border-color);
+            cursor: pointer; font-size: 12px; display: flex; justify-content: space-between;
+        }
+        .suggestion-item:hover { background: rgba(0, 210, 255, 0.15); }
+
+        button.action-btn {
+            background: var(--accent-red); color: white; font-weight: bold;
+            border: none; margin-top: 8px; cursor: pointer; transition: 0.2s; border-radius: 8px; padding: 10px;
+        }
+
+        body.privacy-mode .privacy-hide { display: none !important; }
+        .privacy-show { display: none; }
+        body.privacy-mode .privacy-show { display: inline !important; }
+
+        .btn-sm { width: auto; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer; font-weight: bold; font-size: 12px; background: var(--input-bg); color: var(--text-main); display: inline-flex; align-items: center; gap: 4px; }
+        .btn-edit { background: var(--accent-blue); color: #000; border: none; }
+        .btn-delete { background: var(--accent-red); color: #fff; border: none; }
+
+        .qty-input { width: 50px !important; padding: 2px 4px !important; text-align: center; margin: 0 !important; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; }
+        th, td { border-bottom: 1px solid var(--border-color); padding: 6px 4px; text-align: center; }
+        th { color: var(--accent-blue); }
+
+        .stat-box { display: flex; justify-content: space-between; background: var(--input-bg); padding: 8px; border-radius: 6px; margin-top: 5px; font-weight: bold; font-size: 12px; }
+        .profit { color: var(--accent-green); }
+        .badge { background: var(--accent-red); color: white; padding: 2px 5px; border-radius: 4px; font-size: 10px; }
+        .badge-warning { background: #eab308; color: #000; }
+        .bon-card { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; margin-bottom: 6px; text-align: inherit; }
+        .z-report-card { background: rgba(234, 179, 8, 0.1); border: 2px solid #eab308; border-radius: 8px; padding: 10px; margin-bottom: 10px; text-align: inherit; }
+        
+        .history-day-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: var(--input-bg); border: 1px solid var(--border-color);
+            padding: 10px; border-radius: 8px; margin-bottom: 6px; cursor: pointer; transition: 0.2s;
+        }
+        .history-day-item:hover { border-color: var(--accent-blue); }
+
+        .num-col { color: #888; font-size: 11px; width: 26px; }
+
+        .receipt-paper {
+            background: #ffffff; color: #111827; width: 100%; max-width: 360px;
+            border-radius: 14px; padding: 22px 18px 18px; position: relative;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto;
+            font-family: 'Cairo', sans-serif;
+        }
+        .receipt-brand { text-align: center; font-size: 26px; font-weight: 800; letter-spacing: 1px; color: #111827; }
+        .receipt-brand span { color: #eb0029; }
+        .receipt-sub { text-align: center; font-size: 11px; color: #6b7280; margin-top: 2px; }
+        .receipt-meta { display: flex; justify-content: space-between; font-size: 12px; color: #374151; margin-top: 14px; padding: 8px 10px; background: #f3f4f6; border-radius: 8px; }
+        .receipt-divider { border: none; border-top: 2px dashed #d1d5db; margin: 14px 0; }
+        .receipt-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+        .receipt-table th { color: #6b7280; font-size: 11px; font-weight: 600; padding: 4px 2px; border-bottom: 1px solid #e5e7eb; text-align: center; }
+        .receipt-table td { color: #111827; padding: 7px 2px; border-bottom: 1px solid #f3f4f6; text-align: center; }
+        .receipt-table td.r-name { text-align: right; font-weight: 700; }
+        .receipt-total { display: flex; justify-content: space-between; align-items: center; background: #111827; color: #fff; padding: 12px 14px; border-radius: 10px; font-weight: 800; font-size: 16px; }
+        .receipt-total .amt { color: #00ff88; }
+        .receipt-thanks { text-align: center; margin-top: 14px; font-size: 13px; color: #374151; font-weight: 600; }
+        .receipt-thanks small { display: block; color: #9ca3af; font-weight: 400; font-size: 10.5px; margin-top: 3px; }
+        .receipt-close { margin-top: 14px; background: #eb0029 !important; color: #fff !important; border: none !important; font-weight: bold; cursor: pointer; }
+
+        #splashScreen {
+            position: fixed; inset: 0; z-index: 999999;
+            background: radial-gradient(circle at 50% 40%, #151b2b 0%, #0b0f19 70%);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            overflow: hidden; transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        #splashScreen.splash-hide { opacity: 0; visibility: hidden; pointer-events: none; }
+        .splash-logo { 
+            font-family: 'Cairo', sans-serif; 
+            font-weight: 800; 
+            font-size: 54px; 
+            display: flex; 
+            align-items: center; 
+            direction: ltr !important;
+            gap: 12px;
+        }
+        .splash-img {
+            width: 50px; height: 50px; border-radius: 12px; object-fit: cover;
+            animation: splashFadeIn 0.5s ease forwards;
+        }
+        .splash-o {
+            display: inline-block; color: var(--accent-red);
+            transform: translateY(-140vh) scale(1.4);
+            animation: splashDrop 0.85s cubic-bezier(.17,.89,.32,1.49) forwards;
+        }
+        .splash-rest {
+            display: inline-block; color: #f3f4f6;
+            opacity: 0; transform: translateX(-10px);
+            animation: splashFadeIn 0.55s ease forwards;
+            animation-delay: 0.75s;
+        }
+        .splash-ring {
+            position: absolute; width: 10px; height: 10px; border-radius: 50%;
+            background: var(--accent-red); opacity: 0;
+            animation: splashPulse 0.5s ease forwards;
+            animation-delay: 0.78s;
+        }
+        .splash-sub {
+            margin-top: 10px; font-size: 12px; letter-spacing: 4px; color: #6b7280;
+            opacity: 0; animation: splashFadeIn 0.6s ease forwards; animation-delay: 1.15s;
+            direction: ltr !important;
+        }
+        @keyframes splashDrop {
+            0%   { transform: translateY(-140vh) scale(1.4); }
+            60%  { transform: translateY(8px) scale(1); }
+            80%  { transform: translateY(-4px) scale(1); }
+            100% { transform: translateY(0) scale(1); }
+        }
+        @keyframes splashFadeIn {
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes splashPulse {
+            0% { opacity: 0.7; transform: scale(0); }
+            100% { opacity: 0; transform: scale(14); }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="splashScreen" dir="ltr" onclick="hideSplash()">
+        <div class="splash-logo">
+            <img src="icon.png" class="splash-img" onerror="this.style.display='none'">
+            <span class="splash-o">O</span><span class="splash-rest">NE<span style="color:var(--accent-red);">POS</span></span>
+            <span class="splash-ring"></span>
+        </div>
+        <div class="splash-sub">P O I N T &nbsp; O F &nbsp; S A L E</div>
+    </div>
+
+    <div class="header">
+        <div class="brand">
+            <img src="icon.png" onerror="this.style.display='none'">
+            ONE<span>POS</span> <small style="font-size: 10px; color: var(--accent-blue);">V15</small>
+        </div>
+        <div class="header-controls">
+            <button class="btn-sm" id="privacyToggleBtn" style="background:#374151; color:#fff; border:none;" onclick="togglePrivacyMode()">🙈 إخفاء الأسعار</button>
+            <button class="btn-sm" onclick="toggleSettingsModal()">⚙️ الإعدادات</button>
+        </div>
+    </div>
+
+    <div id="settingsModal" class="modal-overlay" onclick="closeSettingsOutside(event)">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>⚙️ إعدادات النظام والتحكم</span>
+                <button class="btn-sm" style="width: auto; padding: 2px 8px;" onclick="toggleSettingsModal()">✕</button>
+            </div>
+            
+            <div style="margin-bottom: 12px;">
+                <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">مظهر الشاشة / Theme</label>
+                <button class="action-btn" style="background: var(--input-bg); color: var(--text-main); border: 1px solid var(--border-color); margin: 0;" onclick="toggleTheme()">🌓 الوضع الليلي / النهاري</button>
+            </div>
+
+            <hr style="border-color: var(--border-color); margin: 15px 0;">
+
+            <div style="margin-bottom: 8px;">
+                <button class="action-btn" style="background: #2563eb; color:#fff;" onclick="exportAppData()">📥 تصدير نسخة احتياطية (Backup)</button>
+            </div>
+
+            <div>
+                <input type="file" id="importFile" onchange="importAppData(event)" style="display:none;">
+                <label for="importFile" style="background: var(--accent-green); color:#000; padding: 10px; border-radius: 8px; display: block; cursor: pointer; font-weight: bold; text-align: center; font-size: 13px;">📤 استعادة البيانات من ملف Backup</label>
+            </div>
+        </div>
+    </div>
+
+    <div id="receiptModal" class="modal-overlay" onclick="closeReceiptOutside(event)">
+        <div class="receipt-paper" id="receiptPaper"></div>
+    </div>
+
+    <div id="quickBonModal" class="modal-overlay" onclick="closeQuickBonModalOutside(event)">
+        <div class="modal-content" style="max-width: 440px;">
+            <div class="modal-header">
+                <span>⚡ بون سريع</span>
+                <button class="btn-sm" style="width: auto; padding: 2px 8px;" onclick="closeQuickBonModal()">✕</button>
+            </div>
+            <p style="font-size:11px; color:#aaa; margin: -6px 0 10px;">لا تؤثر على الفاتورة الحالية ولا تمسحها — فقط بون منفصل سريع.</p>
+
+            <div class="search-box-wrapper">
+                <input type="text" id="quickProductSearch" placeholder="🔍 ابحث عن سلعة..." autocomplete="off" oninput="filterProducts('quick', this.value)">
+                <div id="quickSuggestions" class="custom-suggestions"></div>
+            </div>
+            <div style="display: flex; gap: 5px; margin-top: 4px;">
+                <input type="number" id="quickQty" value="1" placeholder="الكمية">
+                <input type="number" id="quickPrice" placeholder="السعر للزبون">
+            </div>
+            <button class="action-btn" onclick="addToQuickCart()">+ إضافة</button>
+
+            <div style="overflow-x: auto;">
+                <table id="quickCartTable">
+                    <thead><tr><th>#</th><th>السلعة</th><th>الكمية</th><th>الشراء</th><th class="privacy-hide">البيع</th><th class="privacy-hide">المجموع</th><th class="privacy-hide">الفايدة</th><th>حذف</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="stat-box"><span>إجمالي التكلفة (الشراء):</span><span id="quickCartTotalBuy">0 د.ج</span></div>
+            <div class="stat-box privacy-hide"><span>إجمالي البون السريع:</span><span id="quickCartTotal">0 د.ج</span></div>
+            <div class="stat-box profit privacy-hide"><span>إجمالي الفايدة:</span><span id="quickCartTotalProfit">0 د.ج</span></div>
+            <button class="action-btn" style="background:var(--accent-green); color:#000;" onclick="checkoutQuickBon()">💾 حفظ البون السريع</button>
+        </div>
+    </div>
+
+    <div id="editBonModal" class="modal-overlay" onclick="closeEditBonModalOutside(event)">
+        <div class="modal-content" style="max-width: 440px;">
+            <div class="modal-header">
+                <span>✏️ تعديل البون <span id="editBonLabel" style="color:var(--text-main);"></span></span>
+                <button class="btn-sm" style="width: auto; padding: 2px 8px;" onclick="closeEditBonModal()">✕</button>
+            </div>
+            <p style="font-size:11px; color:#aaa; margin: -6px 0 10px;">عدّل الكميات أو احذف/أضف سلعة — الستوك والأسعار يتصححون تلقائياً عند الحفظ.</p>
+
+            <div class="search-box-wrapper">
+                <input type="text" id="editProductSearch" placeholder="🔍 ابحث لإضافة سلعة..." autocomplete="off" oninput="filterProducts('edit', this.value)">
+                <div id="editSuggestions" class="custom-suggestions"></div>
+            </div>
+            <div style="display: flex; gap: 5px; margin-top: 4px;">
+                <input type="number" id="editQty" value="1" placeholder="الكمية">
+                <input type="number" id="editPrice" placeholder="السعر للزبون">
+            </div>
+            <button class="action-btn" style="background:var(--accent-blue);" onclick="addToEditCart()">+ إضافة سلعة</button>
+
+            <div style="overflow-x: auto;">
+                <table id="editCartTable">
+                    <thead><tr><th>#</th><th>السلعة</th><th>الكمية</th><th>الشراء</th><th class="privacy-hide">البيع</th><th class="privacy-hide">المجموع</th><th class="privacy-hide">الفايدة</th><th>حذف</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="stat-box"><span>إجمالي التكلفة (الشراء):</span><span id="editCartTotalBuy">0 د.ج</span></div>
+            <div class="stat-box privacy-hide"><span>الإجمالي بعد التعديل:</span><span id="editCartTotal">0 د.ج</span></div>
+            <div class="stat-box profit privacy-hide"><span>إجمالي الفايدة:</span><span id="editCartTotalProfit">0 د.ج</span></div>
+            <button class="action-btn" style="background:var(--accent-green); color:#000;" onclick="saveEditedBon()">💾 حفظ التعديل</button>
+        </div>
+    </div>
+
+    <div class="nav-tabs">
+        <div class="tab-btn active" onclick="switchTab('posTab', this)">🛒 البيع واليومية</div>
+        <div class="tab-btn" onclick="switchTab('checkListTab', this)" style="border-color: #f59e0b;">📋 قائمة المراجعة</div>
+        <div class="tab-btn" onclick="switchTab('calcTab', this)" style="border-color: var(--accent-purple);">🧮 حاسبة مؤقتة</div>
+        <div class="tab-btn" onclick="switchTab('debtTab', this)">📝 الديون</div>
+        <div class="tab-btn" onclick="switchTab('historyTab', this)">📜 أرشيف الأيام</div>
+        <div class="tab-btn" onclick="switchTab('stockTab', this)">📦 الستوك</div>
+    </div>
+
+    <!-- Tab 1: البيع واليومية -->
+    <div id="posTab" class="tab-content active">
+        <div class="grid-container">
+            <div class="card">
+                <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>🛒 الفاتورة الحالية (Bon)</span>
+                    <button class="btn-sm" style="background:var(--accent-purple); color:#fff; border:none; width:auto;" onclick="openQuickBonModal()">⚡ بون سريع</button>
+                </h3>
+                
+                <div class="search-box-wrapper">
+                    <input type="text" id="saleProductSearch" placeholder="🔍 ابحث عن سلعة..." autocomplete="off" oninput="filterProducts('sale', this.value)">
+                    <div id="saleSuggestions" class="custom-suggestions"></div>
+                </div>
+
+                <div style="display: flex; gap: 5px; margin-top: 4px;">
+                    <input type="number" id="saleQty" value="1" placeholder="الكمية">
+                    <input type="number" id="saleCustomPrice" placeholder="السعر للزبون">
+                </div>
+                <button class="action-btn" onclick="addToCart()">+ إضافة للفاتورة</button>
+
+                <div style="overflow-x: auto;">
+                    <table id="cartTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>السلعة</th>
+                                <th>العدد</th>
+                                <th>الشراء</th>
+                                <th class="privacy-hide">البيع</th>
+                                <th class="privacy-hide">المجموع</th>
+                                <th class="privacy-hide">الفايدة</th>
+                                <th>إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="stat-box"><span>إجمالي التكلفة (الشراء):</span><span id="cartTotalBuy">0 د.ج</span></div>
+                <div class="stat-box privacy-hide"><span>إجمالي المبيعات:</span><span id="cartTotalSell">0 د.ج</span></div>
+                <div class="stat-box profit privacy-hide"><span>إجمالي الفايدة:</span><span id="cartTotalProfit">0 د.ج</span></div>
+
+                <button class="action-btn" style="background:var(--accent-green); color:#000;" onclick="checkout()">حفظ الـ Bon والتفريغ</button>
+            </div>
+
+            <div class="card">
+                <h3>🧾 سجل بونات اليوم <span style="font-size:10px; color:#aaa;">(الأحدث بالأعلى)</span></h3>
+                <div id="bonsHistoryList" style="max-height: 250px; overflow-y: auto;"></div>
+            </div>
+
+            <div class="card">
+                <h3>📊 إجمالي اليوم (<span id="currentDate"></span>)</h3>
+                <table id="dailyTable">
+                    <thead><tr><th>#</th><th>السلعة</th><th>المباع</th><th class="privacy-hide">الإجمالي</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <div class="stat-box privacy-hide"><span>المبيعات:</span><span id="dailyRevenue">0 د.ج</span></div>
+                <div class="stat-box"><span>التكلفة:</span><span id="dailyCost">0 د.ج</span></div>
+                <div class="stat-box profit privacy-hide"><span>صافي الربح:</span><span id="dailyProfit">0 د.ج</span></div>
+                
+                <button class="action-btn" style="background: #2563eb;" onclick="exportToCSV()">📥 تصدير تقرير اليوم (CSV)</button>
+                <button class="action-btn" style="background: #eab308; color: #000; margin-top: 6px;" onclick="closeDay()">🔒 إغلاق اليومية وإنهاء اليوم</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 2: قائمة المراجعة -->
+    <div id="checkListTab" class="tab-content">
+        <div class="card">
+            <h3 style="color: #f59e0b;">📋 تسجيل السلع للمراجعة (لا تؤثر على الستوك)</h3>
+            <div style="display: flex; gap: 5px;">
+                <div class="search-box-wrapper" style="flex:1;">
+                    <input type="text" id="checkProductSearch" placeholder="🔍 ابحث عن سلعة..." autocomplete="off" oninput="filterProducts('check', this.value)">
+                    <div id="checkSuggestions" class="custom-suggestions"></div>
+                </div>
+                <input type="number" id="checkQty" value="1" placeholder="العدد" style="width: 80px;">
+            </div>
+            <button class="action-btn" style="background: #f59e0b; color: #000;" onclick="addToCheckList()">+ إضافة للقائمة</button>
+        </div>
+
+        <div class="card">
+            <h3>📝 السلع المسجلة للمراجعة</h3>
+            <table id="checkListTable">
+                <thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th>التكلفة</th><th>إجراء</th></tr></thead>
+                <tbody></tbody>
+            </table>
+            <div class="stat-box"><span>إجمالي تكلفة القائمة:</span><span id="checkListTotalCost">0 د.ج</span></div>
+            <button class="action-btn" style="background: #4b5563; color: white; margin-top: 15px;" onclick="clearCheckList()">مسح القائمة بالكامل</button>
+        </div>
+    </div>
+
+    <!-- Tab 3: الحاسبة المؤقتة -->
+    <div id="calcTab" class="tab-content">
+        <div class="card">
+            <h3 style="color: var(--accent-purple);">🧮 حاسبة التكلفة والبيع والفايدة (مؤقتة)</h3>
+            <div class="search-box-wrapper">
+                <input type="text" id="calcProductSearch" placeholder="🔍 ابحث عن سلعة..." autocomplete="off" oninput="filterProducts('calc', this.value)">
+                <div id="calcSuggestions" class="custom-suggestions"></div>
+            </div>
+            
+            <div style="display: flex; gap: 5px; margin-top: 4px;">
+                <input type="number" id="calcQty" value="1" placeholder="الكمية">
+                <input type="number" id="calcBuyPrice" placeholder="سعر الشراء">
+                <input type="number" id="calcSellPrice" placeholder="سعر البيع">
+            </div>
+            <button class="action-btn" style="background: var(--accent-purple); color: #fff;" onclick="addToCalc()">+ إضافة للحاسبة</button>
+        </div>
+
+        <div class="card">
+            <h3>📋 جدول الحساب المؤقت</h3>
+            <table id="calcTable">
+                <thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th>الشراء</th><th class="privacy-hide">البيع</th><th class="privacy-hide">إجمالي البيع</th><th>إجراء</th></tr></thead>
+                <tbody></tbody>
+            </table>
+
+            <hr style="border-color: var(--border-color); margin: 10px 0;">
+            <div class="stat-box"><span>إجمالي قيمة الشراء (التكلفة):</span><span id="calcTotalBuy">0 د.ج</span></div>
+            <div class="stat-box privacy-hide"><span>إجمالي قيمة البيع:</span><span id="calcTotalSell">0 د.ج</span></div>
+            <div class="stat-box profit privacy-hide"><span>إجمالي الفايدة:</span><span id="calcTotalProfit">0 د.ج</span></div>
+            
+            <button class="action-btn" style="background: #4b5563; color: white;" onclick="clearCalc()">تفريغ الحاسبة</button>
+        </div>
+    </div>
+
+    <!-- Tab 4: سجل الديون -->
+    <div id="debtTab" class="tab-content">
+        <div class="grid-container">
+            <div class="card">
+                <h3>➕ إضافة فاتورة دين جديدة</h3>
+                <input type="text" id="debtCustomerName" placeholder="اسم الزبون (مثال: محمد العمري)">
+                
+                <div class="search-box-wrapper">
+                    <input type="text" id="debtProductSearch" placeholder="🔍 ابحث عن السلعة..." autocomplete="off" oninput="filterProducts('debt', this.value)">
+                    <div id="debtSuggestions" class="custom-suggestions"></div>
+                </div>
+
+                <div style="display: flex; gap: 5px; margin-top: 4px;">
+                    <input type="number" id="debtQty" value="1" placeholder="الكمية">
+                    <input type="number" id="debtPrice" placeholder="سعر البيع">
+                </div>
+                <button class="action-btn" style="background: var(--accent-blue);" onclick="addDebtItemToCart()">+ إضافة سلعة لفاتورة الدين</button>
+
+                <div style="overflow-x: auto; margin-top: 10px;">
+                    <table id="debtCartTable">
+                        <thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th class="privacy-hide">السعر</th><th class="privacy-hide">المجموع</th><th>إجراء</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="stat-box privacy-hide"><span>إجمالي الدين الحالي:</span><span id="debtCartTotal">0 د.ج</span></div>
+                
+                <div style="display: flex; gap: 6px; margin-top: 8px;">
+                    <button class="action-btn" style="background: #eab308; color: #000; flex: 1; margin:0;" onclick="saveDebtBon(true)">💾 حفظ مع النزع من الستوك</button>
+                    <button class="action-btn" style="background: #4b5563; color: #fff; flex: 1; margin:0;" onclick="saveDebtBon(false)">💾 حفظ بدون نزع</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📋 قائمة الديون والزبائن المسجلة</h3>
+                <div id="debtsList" style="max-height: 350px; overflow-y: auto;"></div>
+                
+                <hr style="border-color: var(--border-color); margin: 10px 0;">
+                <div class="stat-box privacy-hide"><span>إجمالي الديون المعلقة:</span><span id="debtTotalSell">0 د.ج</span></div>
+                <div class="stat-box profit privacy-hide"><span>إجمالي الفايدة المعلقة:</span><span id="debtTotalProfit">0 د.ج</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 5: أرشيف الأيام -->
+    <div id="historyTab" class="tab-content">
+        <div class="card">
+            <h3>📅 الأيام المؤرشفة تلقائياً</h3>
+            <div id="historyDaysContainer"></div>
+        </div>
+
+        <div class="card" id="historyDetailsCard" style="display:none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 8px;">
+                <h3 id="selectedDateTitle" style="margin:0; border:none; padding:0;">تفاصيل اليوم</h3>
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn-sm btn-edit" onclick="openAddBonToHistoryModal()">➕ إضافة بون منسي</button>
+                    <button class="btn-sm btn-delete" onclick="deleteHistoryDay()">🗑️ حذف اليوم</button>
+                </div>
+            </div>
+            
+            <div id="zReportContainer"></div>
+
+            <div class="stat-box privacy-hide"><span>المبيعات:</span><span id="hRevenue">0 د.ج</span></div>
+            <div class="stat-box"><span>التكلفة:</span><span id="hCost">0 د.ج</span></div>
+            <div class="stat-box profit privacy-hide"><span>صافي الربح:</span><span id="hProfit">0 د.ج</span></div>
+
+            <h4 style="color:var(--accent-blue); margin-top:12px;">🧾 البونات التفصيلية:</h4>
+            <div id="hBonsList" style="max-height: 250px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <div id="addHistoryBonModal" class="modal-overlay" onclick="closeHistoryBonModalOutside(event)">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>➕ إضافة بون منسي لتاريخ: <span id="modalTargetDate"></span></span>
+                <button class="btn-sm" style="width: auto; padding: 2px 8px;" onclick="closeHistoryBonModal()">✕</button>
+            </div>
+            
+            <div class="search-box-wrapper" style="margin-bottom: 6px;">
+                <input type="text" id="histBonProductSearch" placeholder="🔍 ابحث عن السلعة..." autocomplete="off" oninput="filterProducts('histBon', this.value)">
+                <div id="histBonSuggestions" class="custom-suggestions"></div>
+            </div>
+
+            <div style="display: flex; gap: 5px; margin-bottom: 6px;">
+                <input type="number" id="histBonQty" value="1" placeholder="العدد">
+                <input type="number" id="histBonPrice" placeholder="سعر البيع للقطعة">
+            </div>
+            <button class="action-btn" style="background: var(--accent-blue);" onclick="addHistBonItemTemp()">+ إضافة سلعة للبون المؤقت</button>
+
+            <div style="max-height: 120px; overflow-y: auto; margin-top: 8px;">
+                <table id="histBonTempTable">
+                    <thead><tr><th>#</th><th>سلعة</th><th>عدد</th><th class="privacy-hide">سعر</th><th>حذف</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div style="margin-top: 8px; font-size: 12px;">
+                <label><input type="checkbox" id="histRestoreStock" checked> خصم هذه السلع من الستوك الحالي أيضاً؟</label>
+            </div>
+
+            <button class="action-btn" style="background: var(--accent-green); color:#000; margin-top: 10px;" onclick="saveBonToHistoryDate()">💾 حفظ وتحديث الأرشيف</button>
+        </div>
+    </div>
+
+    <!-- Tab 6: الستوك -->
+    <div id="stockTab" class="tab-content">
+        <div class="card">
+            <h3>🔍 بحث سريع عن الكمية</h3>
+            <div class="search-box-wrapper">
+                <input type="text" id="stockQuickSearch" placeholder="🔍 اكتب اسم السلعة لمعرفة الكمية فوراً..." autocomplete="off" oninput="quickStockSearch(this.value)">
+            </div>
+            <div id="stockQuickResult"></div>
+        </div>
+
+        <div class="card">
+            <h3>📈 ملخص وقيمة الستوك</h3>
+            <div class="stat-box"><span>عدد الأنواع:</span><span id="totalItemsCount">0</span></div>
+            <div class="stat-box"><span>تكلفة الشراء:</span><span id="stockTotalBuy">0 د.ج</span></div>
+            <div class="stat-box privacy-hide"><span>قيمة البيع المتوقعة:</span><span id="stockTotalSell">0 د.ج</span></div>
+            <div class="stat-box profit privacy-hide"><span>الربح المتوقع:</span><span id="stockExpectedProfit">0 د.ج</span></div>
+        </div>
+
+        <div class="card">
+            <h3>➕ إضافة / تعديل السلعة</h3>
+            <div class="search-box-wrapper">
+                <input type="text" id="pName" placeholder="اسم السلعة (ابحث أولاً لتفادي التكرار)" autocomplete="off" oninput="filterPNameSuggestions(this.value)">
+                <div id="pNameSuggestions" class="custom-suggestions"></div>
+            </div>
+            <input type="number" id="pBuyPrice" placeholder="سعر الشراء (التكلفة)">
+            <input type="number" id="pSellPrice" placeholder="سعر البيع الافتراضي">
+            <input type="number" id="pStock" placeholder="الكمية المتوفرة (استبدال كامل للرقم القديم)">
+            
+            <div style="background: var(--input-bg); border: 1px dashed var(--accent-blue); padding: 8px; border-radius: 8px; margin: 8px 0;">
+                <label style="font-size: 11px; color: var(--accent-blue); font-weight: bold; display: block; margin-bottom: 4px;">🔗 ربط بالعلبة الكبيرة (اختياري - للتحويل التلقائي عند فتح الباك):</label>
+                <input type="text" id="pParentName" placeholder="اسم السلعة الكبرى (مثال: صندوق شوابس)">
+                <input type="number" id="pPackRatio" placeholder="كم يحتوي الصندوق الكبير من هذه السلعة؟ (مثال: 4)">
+            </div>
+
+            <button class="action-btn" style="background:var(--accent-blue); color:#000;" onclick="addProduct()">حفظ / تحديث السلعة (استبدال كامل)</button>
+
+            <hr style="border-color: var(--border-color); margin: 14px 0;">
+
+            <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">📦 توريد: إضافة كمية فوق الستوك الحالي (بدون حذف القديم)</label>
+            <input type="number" id="pAddStockQty" placeholder="الكمية المراد إضافتها">
+            <button class="action-btn" style="background:var(--accent-green); color:#000;" onclick="addStockQty()">➕ إضافة للستوك الحالي</button>
+        </div>
+
+        <div class="card">
+            <h3>📋 قائمة المخزون الحالي</h3>
+            <table id="stockTable">
+                <thead><tr><th>#</th><th>السلعة</th><th>الستوك</th><th>الشراء</th><th class="privacy-hide">البيع</th><th>إجراء</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function getSafeJSON(key, fallback) {
+            try {
+                let item = localStorage.getItem(key);
+                return item ? JSON.parse(item) : fallback;
+            } catch (e) {
+                return fallback;
+            }
+        }
+
+        // ---------- نظام الحماية والأمان المرآتي ضد فقدان البيانات ----------
+        function getSafeStorageToday(key) {
+            let data = getSafeJSON(key, null);
+            if (!data || (Array.isArray(data) && data.length === 0)) {
+                let mirrorData = getSafeJSON('mirror_' + key, null);
+                if (mirrorData && Array.isArray(mirrorData) && mirrorData.length > 0) {
+                    localStorage.setItem(key, JSON.stringify(mirrorData));
+                    return mirrorData;
+                }
+            }
+            return data || [];
+        }
+
+        function setSafeStorageToday(key, value) {
+            localStorage.setItem(key, JSON.stringify(value));
+            localStorage.setItem('mirror_' + key, JSON.stringify(value));
+        }
+
+        let products = getSafeJSON('products', {});
+        let debts = getSafeJSON('debts', []);
+        let checkListItems = getSafeJSON('checkListItems', []);
+        let cart = [];
+        let debtCart = [];
+        let calcItems = [];
+        let histBonTemp = [];
+        let today = new Date().toISOString().split('T')[0];
+        let currentSelectedHistoryDate = null;
+
+        let currentDateEl = document.getElementById('currentDate');
+        if (currentDateEl) currentDateEl.innerText = today;
+
+        function deductStockWithUnboxing(itemName, qtyNeeded) {
+            if (!products[itemName]) return;
+
+            let p = products[itemName];
+            if (p.stock < qtyNeeded && p.parentName && products[p.parentName] && p.packRatio > 0) {
+                let parent = products[p.parentName];
+                
+                while (p.stock < qtyNeeded && parent.stock > 0) {
+                    parent.stock -= 1;
+                    p.stock += parseInt(p.packRatio);
+                }
+            }
+
+            p.stock -= qtyNeeded;
+        }
+
+        function restoreStockSmart(itemName, qtyToRestore) {
+            if (!products[itemName]) return;
+            products[itemName].stock += qtyToRestore;
+        }
+
+        function autoClosePastDays() {
+            let pastUnclosedDates = new Set();
+            for (let i = 0; i < localStorage.length; i++) {
+                let key = localStorage.key(i);
+                if (key && (key.startsWith('sales_') || key.startsWith('bons_'))) {
+                    let dateStr = key.replace('sales_', '').replace('bons_', '');
+                    if (dateStr && dateStr < today && dateStr.length >= 8) {
+                        pastUnclosedDates.add(dateStr);
+                    }
+                }
+            }
+
+            pastUnclosedDates.forEach(pastDate => {
+                let salesHistory = getSafeJSON('sales_' + pastDate, []);
+                let bonsHistory = getSafeJSON('bons_' + pastDate, []);
+
+                if (salesHistory.length > 0 || bonsHistory.length > 0) {
+                    let totalRevenue = 0, totalCost = 0;
+                    salesHistory.forEach(item => {
+                        totalRevenue += item.total;
+                        totalCost += ((item.buyPrice || 0) * item.qty);
+                    });
+                    let netProfit = totalRevenue - totalCost;
+
+                    let zReport = {
+                        date: pastDate,
+                        revenue: totalRevenue,
+                        cost: totalCost,
+                        profit: netProfit,
+                        totalBons: bonsHistory.length,
+                        closedAt: 'تلقائي (عند نهاية اليوم)',
+                        salesItems: salesHistory,
+                        allBons: bonsHistory
+                    };
+
+                    localStorage.setItem('zreport_' + pastDate, JSON.stringify(zReport));
+                    localStorage.setItem('archived_sales_' + pastDate, JSON.stringify(salesHistory));
+                    localStorage.setItem('archived_bons_' + pastDate, JSON.stringify(bonsHistory));
+                }
+
+                localStorage.removeItem('sales_' + pastDate);
+                localStorage.removeItem('bons_' + pastDate);
+                localStorage.removeItem('mirror_sales_' + pastDate);
+                localStorage.removeItem('mirror_bons_' + pastDate);
+            });
+        }
+
+        autoClosePastDays();
+
+        function parseTimeValue(timeStr) {
+            if (!timeStr) return 0;
+            let str = timeStr.toString().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+            let isPM = str.includes('م');
+            let isAM = str.includes('ص');
+            let match = str.match(/(\d+):(\d+)/);
+            if (!match) return 0;
+            let h = parseInt(match[1], 10);
+            let m = parseInt(match[2], 10);
+            if (isPM && h !== 12) h += 12;
+            if (isAM && h === 12) h = 0;
+            return h * 60 + m;
+        }
+
+        function normalizeBons(bonsArray) {
+            if (!Array.isArray(bonsArray)) return [];
+            bonsArray.sort((a, b) => parseTimeValue(a.time) - parseTimeValue(b.time));
+            bonsArray.forEach((b, idx) => { b.id = idx + 1; });
+            return bonsArray;
+        }
+
+        let initBons = getSafeStorageToday('bons_' + today);
+        if (initBons.length > 0) {
+            initBons = normalizeBons(initBons);
+            setSafeStorageToday('bons_' + today, initBons);
+        }
+
+        let privacyMode = localStorage.getItem('privacyMode') === 'true';
+
+        function applyPrivacyMode() {
+            document.body.classList.toggle('privacy-mode', privacyMode);
+            let btn = document.getElementById('privacyToggleBtn');
+            if (btn) btn.innerText = privacyMode ? '👁️ إظهار الكل' : '🙈 إخفاء الأسعار';
+        }
+
+        function togglePrivacyMode() {
+            privacyMode = !privacyMode;
+            localStorage.setItem('privacyMode', privacyMode);
+            applyPrivacyMode();
+        }
+
+        applyPrivacyMode();
+
+        function hideSplash() {
+            let splash = document.getElementById('splashScreen');
+            if (!splash) return;
+            splash.classList.add('splash-hide');
+            splash.style.pointerEvents = 'none';
+            setTimeout(() => {
+                if (splash) splash.style.display = 'none';
+            }, 500);
+        }
+
+        setTimeout(hideSplash, 1800);
+        window.addEventListener('load', hideSplash);
+
+        function toggleSettingsModal() {
+            let modal = document.getElementById('settingsModal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function closeSettingsOutside(e) {
+            if (e.target.id === 'settingsModal') toggleSettingsModal();
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme');
+            document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark');
+        }
+
+        function exportAppData() {
+            let data = JSON.stringify(localStorage);
+            let blob = new Blob([data], {type: "application/json"});
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = `onepos_backup_${today}.json`;
+            a.click();
+        }
+
+        function importAppData(event) {
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let data = JSON.parse(e.target.result);
+                    for (let key in data) localStorage.setItem(key, data[key]);
+                    alert('تمت الاستعادة بنجاح!');
+                    location.reload();
+                } catch(err) {
+                    alert('ملف غير صالح!');
+                }
+            };
+            reader.readAsText(event.target.files[0]);
+        }
+
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            let targetTab = document.getElementById(tabId);
+            if (targetTab) targetTab.classList.add('active');
+            if (btn) btn.classList.add('active');
+
+            if (tabId === 'historyTab') loadHistoryDaysList();
+            if (tabId === 'debtTab') renderDebts();
+            if (tabId === 'checkListTab') renderCheckListUI();
+        }
+
+        document.querySelectorAll('.custom-suggestions').forEach(box => {
+            document.body.appendChild(box);
+        });
+
+        function positionSuggestionsBox(suggestionsBox, inputEl) {
+            if (!inputEl) return;
+            let rect = inputEl.getBoundingClientRect();
+            suggestionsBox.style.top = (rect.bottom + 2) + 'px';
+            suggestionsBox.style.left = rect.left + 'px';
+            suggestionsBox.style.width = rect.width + 'px';
+        }
+
+        function filterProducts(type, query) {
+            let suggestionsBox = document.getElementById(type + 'Suggestions');
+            if (!suggestionsBox) return;
+            suggestionsBox.innerHTML = '';
+            
+            if (!query.trim()) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+
+            let matches = Object.keys(products).filter(name => name.toLowerCase().includes(query.toLowerCase()));
+            
+            if (matches.length === 0) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+
+            positionSuggestionsBox(suggestionsBox, document.getElementById(type + 'ProductSearch'));
+
+            matches.forEach(name => {
+                let p = products[name];
+                let div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.innerHTML = `<span><b>${name}</b></span> <span style="color:var(--accent-green);">الستوك: ${p.stock} | ${p.sell} د.ج</span>`;
+                
+                div.onclick = function() {
+                    let searchInput = document.getElementById(type + 'ProductSearch');
+                    if (searchInput) searchInput.value = name;
+                    suggestionsBox.style.display = 'none';
+                    
+                    if (type === 'sale') {
+                        document.getElementById('saleCustomPrice').value = p.sell;
+                    } else if (type === 'calc') {
+                        document.getElementById('calcBuyPrice').value = p.buy;
+                        document.getElementById('calcSellPrice').value = p.sell;
+                    } else if (type === 'debt') {
+                        document.getElementById('debtPrice').value = p.sell;
+                    } else if (type === 'histBon') {
+                        document.getElementById('histBonPrice').value = p.sell;
+                    } else if (type === 'quick') {
+                        document.getElementById('quickPrice').value = p.sell;
+                    } else if (type === 'edit') {
+                        document.getElementById('editPrice').value = p.sell;
+                    }
+                };
+                suggestionsBox.appendChild(div);
+            });
+            suggestionsBox.style.display = 'block';
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.search-box-wrapper') && !e.target.closest('.custom-suggestions')) {
+                document.querySelectorAll('.custom-suggestions').forEach(box => box.style.display = 'none');
+            }
+        });
+
+        function addProduct() {
+            let name = document.getElementById('pName').value.trim();
+            let buy = parseFloat(document.getElementById('pBuyPrice').value);
+            let sell = parseFloat(document.getElementById('pSellPrice').value);
+            let stock = parseInt(document.getElementById('pStock').value);
+            let parentName = document.getElementById('pParentName').value.trim();
+            let packRatio = parseInt(document.getElementById('pPackRatio').value) || 0;
+
+            if (!name || isNaN(buy) || isNaN(sell) || isNaN(stock)) return alert('يرجى ملء كافة الحقول الأساسية');
+
+            products[name] = { buy, sell, stock, parentName, packRatio };
+            localStorage.setItem('products', JSON.stringify(products));
+            
+            document.getElementById('pName').value = '';
+            document.getElementById('pBuyPrice').value = '';
+            document.getElementById('pSellPrice').value = '';
+            document.getElementById('pStock').value = '';
+            document.getElementById('pParentName').value = '';
+            document.getElementById('pPackRatio').value = '';
+
+            updateProductViews();
+            alert('تمت إضافة/تحديث السلعة بنجاح!');
+        }
+
+        function updateProductViews() {
+            let stockTbody = document.querySelector('#stockTable tbody');
+            if (!stockTbody) return;
+            stockTbody.innerHTML = '';
+            let totalBuyVal = 0, totalSellVal = 0, itemCount = 0;
+
+            let stockIdx = 0;
+            for (let name in products) {
+                let p = products[name];
+                stockIdx++;
+                let linkInfo = p.parentName ? `<br><small style="color:var(--accent-blue);">🔗 علبة: ${p.parentName} (${p.packRatio})</small>` : '';
+                stockTbody.innerHTML += `<tr>
+                    <td class="num-col">${stockIdx}</td>
+                    <td><b>${name}</b>${linkInfo}</td>
+                    <td><span class="badge ${p.stock < 0 ? 'badge-warning':''}">${p.stock}</span></td>
+                    <td>${p.buy}</td><td class="privacy-hide">${p.sell}</td>
+                    <td>
+                        <button class="btn-sm btn-edit" onclick="editProduct('${name}')">تعديل</button>
+                        <button class="btn-sm btn-delete" onclick="deleteProduct('${name}')">X</button>
+                    </td>
+                </tr>`;
+
+                if (p.stock > 0) {
+                    totalBuyVal += (p.buy * p.stock);
+                    totalSellVal += (p.sell * p.stock);
+                }
+                itemCount++;
+            }
+
+            document.getElementById('totalItemsCount').innerText = itemCount;
+            document.getElementById('stockTotalBuy').innerText = `${totalBuyVal} د.ج`;
+            document.getElementById('stockTotalSell').innerText = `${totalSellVal} د.ج`;
+            document.getElementById('stockExpectedProfit').innerText = `${totalSellVal - totalBuyVal} د.ج`;
+        }
+
+        function quickStockSearch(query) {
+            let resultBox = document.getElementById('stockQuickResult');
+            if (!resultBox) return;
+            resultBox.innerHTML = '';
+            if (!query.trim()) return;
+
+            let matches = Object.keys(products).filter(name => name.toLowerCase().includes(query.toLowerCase()));
+
+            if (matches.length === 0) {
+                resultBox.innerHTML = `<p style="text-align:center;color:#888; margin-top:8px;">لا توجد نتائج</p>`;
+                return;
+            }
+
+            matches.forEach(name => {
+                let p = products[name];
+                resultBox.innerHTML += `
+                    <div class="bon-card" style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:bold;">${name}</span>
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <span class="badge ${p.stock < 0 ? 'badge-warning':''}" style="font-size:13px;">الستوك: ${p.stock}</span>
+                            <span style="font-size:11px; color:#aaa;">شراء ${p.buy}<span class="privacy-hide"> / بيع ${p.sell}</span></span>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function filterPNameSuggestions(query) {
+            let suggestionsBox = document.getElementById('pNameSuggestions');
+            if (!suggestionsBox) return;
+            suggestionsBox.innerHTML = '';
+
+            if (!query.trim()) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+
+            let matches = Object.keys(products).filter(name => name.toLowerCase().includes(query.toLowerCase()));
+
+            if (matches.length === 0) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+
+            positionSuggestionsBox(suggestionsBox, document.getElementById('pName'));
+
+            matches.forEach(name => {
+                let p = products[name];
+                let div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.innerHTML = `<span><b>${name}</b></span> <span style="color:var(--accent-green);">الستوك: ${p.stock}</span>`;
+
+                div.onclick = function() {
+                    document.getElementById('pName').value = name;
+                    document.getElementById('pBuyPrice').value = p.buy;
+                    document.getElementById('pSellPrice').value = p.sell;
+                    document.getElementById('pStock').value = p.stock;
+                    document.getElementById('pParentName').value = p.parentName || '';
+                    document.getElementById('pPackRatio').value = p.packRatio || '';
+                    suggestionsBox.style.display = 'none';
+                };
+                suggestionsBox.appendChild(div);
+            });
+            suggestionsBox.style.display = 'block';
+        }
+
+        function addStockQty() {
+            let name = document.getElementById('pName').value.trim();
+            let addQty = parseInt(document.getElementById('pAddStockQty').value);
+
+            if (!name || !products[name]) return alert('السلعة غير موجودة! اختر سلعة من قائمة البحث أولاً.');
+            if (isNaN(addQty) || addQty <= 0) return alert('يرجى إدخال كمية صحيحة');
+
+            products[name].stock += addQty;
+            localStorage.setItem('products', JSON.stringify(products));
+
+            let newStock = products[name].stock;
+
+            document.getElementById('pAddStockQty').value = '';
+            document.getElementById('pName').value = '';
+            document.getElementById('pBuyPrice').value = '';
+            document.getElementById('pSellPrice').value = '';
+            document.getElementById('pStock').value = '';
+            document.getElementById('pParentName').value = '';
+            document.getElementById('pPackRatio').value = '';
+
+            updateProductViews();
+            alert(`تمت إضافة ${addQty} إلى ستوك "${name}"! الستوك الجديد: ${newStock}`);
+        }
+
+        function editProduct(name) {
+            let p = products[name];
+            if (!p) return;
+            document.getElementById('pName').value = name;
+            document.getElementById('pBuyPrice').value = p.buy;
+            document.getElementById('pSellPrice').value = p.sell;
+            document.getElementById('pStock').value = p.stock;
+            document.getElementById('pParentName').value = p.parentName || '';
+            document.getElementById('pPackRatio').value = p.packRatio || '';
+        }
+
+        function deleteProduct(name) {
+            if (confirm(`حذف "${name}"؟`)) {
+                delete products[name];
+                localStorage.setItem('products', JSON.stringify(products));
+                updateProductViews();
+            }
+        }
+
+        function addToCart() {
+            let name = document.getElementById('saleProductSearch').value.trim();
+            let qty = parseInt(document.getElementById('saleQty').value);
+            let priceInput = document.getElementById('saleCustomPrice').value;
+
+            if (!name || !products[name]) return alert('السلعة غير موجودة بالستوك');
+            if (isNaN(qty) || qty <= 0) return alert('كمية غير صالحة');
+
+            let price = parseFloat(priceInput);
+            if (isNaN(price)) {
+                price = products[name].sell;
+            }
+
+            let existingIndex = cart.findIndex(item => item.name === name);
+            if (existingIndex > -1) {
+                cart[existingIndex].qty += qty;
+                cart[existingIndex].price = price;
+                cart[existingIndex].total = cart[existingIndex].qty * price;
+                cart[existingIndex].totalCost = cart[existingIndex].qty * cart[existingIndex].buyPrice;
+                cart[existingIndex].profit = cart[existingIndex].total - cart[existingIndex].totalCost;
+            } else {
+                let buyPrice = products[name].buy;
+                let total = qty * price;
+                let totalCost = qty * buyPrice;
+                cart.push({ name, qty, price, buyPrice, totalCost, total, profit: total - totalCost });
+            }
+
+            document.getElementById('saleProductSearch').value = '';
+            document.getElementById('saleQty').value = '1';
+            document.getElementById('saleCustomPrice').value = '';
+            updateCartUI();
+        }
+
+        function updateCartQty(index, newQty) {
+            newQty = parseInt(newQty);
+            if (isNaN(newQty) || newQty <= 0) return;
+            cart[index].qty = newQty;
+            cart[index].totalCost = newQty * cart[index].buyPrice;
+            cart[index].total = newQty * cart[index].price;
+            cart[index].profit = cart[index].total - cart[index].totalCost;
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            let tbody = document.querySelector('#cartTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let totalBuy = 0, totalSell = 0, totalProfit = 0;
+
+            cart.forEach((item, index) => {
+                totalBuy += item.totalCost;
+                totalSell += item.total;
+                totalProfit += item.profit;
+
+                tbody.innerHTML += `<tr>
+                    <td><b>${index + 1}</b></td>
+                    <td><b>${item.name}</b></td>
+                    <td><input type="number" class="qty-input" value="${item.qty}" min="1" onchange="updateCartQty(${index}, this.value)"></td>
+                    <td>${item.totalCost}</td>
+                    <td class="privacy-hide">${item.price}</td>
+                    <td class="privacy-hide"><b>${item.total}</b></td>
+                    <td class="privacy-hide" style="color:var(--accent-green); font-weight:bold;">${item.profit}</td>
+                    <td><button class="btn-sm btn-delete" onclick="cart.splice(${index},1);updateCartUI();">X</button></td>
+                </tr>`;
+            });
+
+            document.getElementById('cartTotalBuy').innerText = `${totalBuy} د.ج`;
+            document.getElementById('cartTotalSell').innerText = `${totalSell} د.ج`;
+            document.getElementById('cartTotalProfit').innerText = `${totalProfit} د.ج`;
+        }
+
+        function checkout() {
+            if (cart.length === 0) return alert('الفاتورة فارغة!');
+            let salesHistory = getSafeStorageToday('sales_' + today);
+            let bonsHistory = getSafeStorageToday('bons_' + today);
+
+            let time = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+            
+            let bonTotalCost = 0, bonTotalSell = 0, bonTotalProfit = 0;
+            cart.forEach(item => {
+                bonTotalCost += item.totalCost;
+                bonTotalSell += item.total;
+                bonTotalProfit += item.profit;
+            });
+
+            let currentBon = { id: 0, time: time, items: [...cart], total: bonTotalSell, totalCost: bonTotalCost, profit: bonTotalProfit };
+            
+            cart.forEach(item => {
+                deductStockWithUnboxing(item.name, item.qty);
+                salesHistory.push(item);
+            });
+
+            bonsHistory.push(currentBon);
+            bonsHistory = normalizeBons(bonsHistory);
+
+            localStorage.setItem('products', JSON.stringify(products));
+            setSafeStorageToday('sales_' + today, salesHistory);
+            setSafeStorageToday('bons_' + today, bonsHistory);
+
+            cart = [];
+            updateCartUI();
+            updateProductViews();
+            renderDailyReport();
+        }
+
+        function deleteTodayBon(bonIndex) {
+            let bonsHistory = getSafeStorageToday('bons_' + today);
+            let targetBon = bonsHistory[bonIndex];
+            if (!targetBon) return;
+
+            if (confirm(`هل أنت متأكد من حذف البون #${targetBon.id}؟`)) {
+                targetBon.items.forEach(item => {
+                    restoreStockSmart(item.name, item.qty);
+                });
+                localStorage.setItem('products', JSON.stringify(products));
+
+                bonsHistory.splice(bonIndex, 1);
+                bonsHistory = normalizeBons(bonsHistory);
+
+                setSafeStorageToday('bons_' + today, bonsHistory);
+
+                let newSalesHistory = [];
+                bonsHistory.forEach(b => { b.items.forEach(i => { newSalesHistory.push(i); }); });
+                setSafeStorageToday('sales_' + today, newSalesHistory);
+
+                updateProductViews();
+                renderDailyReport();
+            }
+        }
+
+        function renderDailyReport() {
+            let salesHistory = getSafeStorageToday('sales_' + today);
+            let tbody = document.querySelector('#dailyTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let summary = {}, totalRevenue = 0, totalCost = 0;
+
+            salesHistory.forEach(item => {
+                totalRevenue += item.total;
+                totalCost += ((item.buyPrice || 0) * item.qty);
+                if (!summary[item.name]) summary[item.name] = { qty: 0, revenue: 0 };
+                summary[item.name].qty += item.qty;
+                summary[item.name].revenue += item.total;
+            });
+
+            let dIdx = 0;
+            for (let name in summary) {
+                dIdx++;
+                tbody.innerHTML += `<tr><td class="num-col">${dIdx}</td><td>${name}</td><td>${summary[name].qty}</td><td class="privacy-hide">${summary[name].revenue}</td></tr>`;
+            }
+
+            document.getElementById('dailyRevenue').innerText = `${totalRevenue} د.ج`;
+            document.getElementById('dailyCost').innerText = `${totalCost} د.ج`;
+            document.getElementById('dailyProfit').innerText = `${totalRevenue - totalCost} د.ج`;
+
+            let bonsHistory = getSafeStorageToday('bons_' + today);
+            let bonsContainer = document.getElementById('bonsHistoryList');
+            if (!bonsContainer) return;
+            bonsContainer.innerHTML = '';
+
+            if (bonsHistory.length === 0) {
+                bonsContainer.innerHTML = `<p style="text-align:center;color:#888;">لا توجد بونات اليوم بعد</p>`;
+            } else {
+                for (let i = bonsHistory.length - 1; i >= 0; i--) {
+                    let bon = bonsHistory[i];
+                    let itemsDetail = bon.items.map(it => `${it.name} (${it.qty}×${it.price})`).join(' ، ');
+                    
+                    bonsContainer.innerHTML += `
+                        <div class="bon-card">
+                            <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--accent-blue);">
+                                <span>${bon.quick ? '⚡ ' : ''}بون #${bon.id} <small>[${bon.time}]</small>${bon.edited ? ' <small style=\'color:#eab308;\'>(معدّل)</small>' : ''}</span>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <span class="privacy-hide" style="color:var(--accent-green);">${bon.total} د.ج</span>
+                                    <span class="privacy-show" style="color:#eab308;">تكلفة: ${bon.totalCost || 0} د.ج</span>
+                                    <button class="btn-sm btn-delete" style="padding:2px 6px;" onclick="deleteTodayBon(${i})">🗑️ حذف وإرجاع</button>
+                                </div>
+                            </div>
+                            <div class="privacy-hide" style="font-size:11px; color:#aaa; margin-top:2px;">${itemsDetail}</div>
+                            <div style="display:flex; gap:6px; margin-top:6px;">
+                                <button class="btn-sm btn-edit" style="padding:4px 10px;" onclick="showReceipt('${today}', ${i}, 'today')">🧾 إظهار ايصال المعاملة</button>
+                                <button class="btn-sm" style="padding:4px 10px; background:#eab308; color:#000; border:none;" onclick="openEditBonModal('${today}', ${i}, 'today')">✏️ تعديل</button>
+                            </div>
+                        </div>`;
+                }
+            }
+        }
+
+        function closeDay() {
+            let salesHistory = getSafeStorageToday('sales_' + today);
+            let bonsHistory = getSafeStorageToday('bons_' + today);
+            if (salesHistory.length === 0 && bonsHistory.length === 0) return alert('لا توجد مبيعات لإغلاقها!');
+
+            let totalRevenue = 0, totalCost = 0;
+            salesHistory.forEach(item => { totalRevenue += item.total; totalCost += ((item.buyPrice || 0) * item.qty); });
+            let netProfit = totalRevenue - totalCost;
+
+            if (confirm(`إغلاق يومية (${today})؟\nالمبيعات: ${totalRevenue} د.ج\nصافي الربح: ${netProfit} د.ج`)) {
+                let zReport = { date: today, revenue: totalRevenue, cost: totalCost, profit: netProfit, totalBons: bonsHistory.length, closedAt: new Date().toLocaleTimeString('ar-DZ'), salesItems: salesHistory, allBons: bonsHistory };
+                localStorage.setItem('zreport_' + today, JSON.stringify(zReport));
+                localStorage.setItem('archived_sales_' + today, JSON.stringify(salesHistory));
+                localStorage.setItem('archived_bons_' + today, JSON.stringify(bonsHistory));
+                localStorage.removeItem('sales_' + today);
+                localStorage.removeItem('bons_' + today);
+                localStorage.removeItem('mirror_sales_' + today);
+                localStorage.removeItem('mirror_bons_' + today);
+                renderDailyReport();
+                alert('تم إغلاق اليومية بنجاح ونقلها للأرشيف.');
+            }
+        }
+
+        function openAddBonToHistoryModal() {
+            if (!currentSelectedHistoryDate) return;
+            document.getElementById('modalTargetDate').innerText = currentSelectedHistoryDate;
+            histBonTemp = [];
+            renderHistBonTempTable();
+            document.getElementById('addHistoryBonModal').style.display = 'flex';
+        }
+
+        function closeHistoryBonModal() {
+            document.getElementById('addHistoryBonModal').style.display = 'none';
+        }
+
+        function closeHistoryBonModalOutside(e) {
+            if (e.target.id === 'addHistoryBonModal') closeHistoryBonModal();
+        }
+
+        function addHistBonItemTemp() {
+            let name = document.getElementById('histBonProductSearch').value.trim();
+            let qty = parseInt(document.getElementById('histBonQty').value);
+            let priceInput = document.getElementById('histBonPrice').value;
+
+            if (!name || !products[name] || isNaN(qty) || qty <= 0) return alert('السلعة غير موجودة أو بيانات غير صالحة');
+
+            let price = parseFloat(priceInput);
+            if (isNaN(price)) price = products[name].sell;
+
+            let buyPrice = products[name].buy;
+            histBonTemp.push({ name, qty, price, buyPrice, total: qty * price, totalCost: qty * buyPrice });
+
+            document.getElementById('histBonProductSearch').value = '';
+            document.getElementById('histBonQty').value = '1';
+            document.getElementById('histBonPrice').value = '';
+            renderHistBonTempTable();
+        }
+
+        function renderHistBonTempTable() {
+            let tbody = document.querySelector('#histBonTempTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            histBonTemp.forEach((item, index) => {
+                tbody.innerHTML += `<tr>
+                    <td class="num-col">${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td>${item.qty}</td>
+                    <td class="privacy-hide">${item.price}</td>
+                    <td><button class="btn-sm btn-delete" onclick="histBonTemp.splice(${index},1); renderHistBonTempTable();">X</button></td>
+                </tr>`;
+            });
+        }
+
+        function saveBonToHistoryDate() {
+            if (histBonTemp.length === 0) return alert('البون المؤقت فارغ!');
+            let dateStr = currentSelectedHistoryDate;
+            let restoreStock = document.getElementById('histRestoreStock').checked;
+
+            let salesHistory = getSafeJSON('archived_sales_' + dateStr, []);
+            let bonsHistory = getSafeJSON('archived_bons_' + dateStr, []);
+
+            let bonTotalSell = 0, bonTotalCost = 0, bonTotalProfit = 0;
+
+            histBonTemp.forEach(item => {
+                bonTotalSell += item.total;
+                bonTotalCost += item.totalCost;
+                salesHistory.push(item);
+                if (restoreStock && products[item.name]) {
+                    deductStockWithUnboxing(item.name, item.qty);
+                }
+            });
+            if (restoreStock) {
+                localStorage.setItem('products', JSON.stringify(products));
+                updateProductViews();
+            }
+
+            bonTotalProfit = bonTotalSell - bonTotalCost;
+
+            let newBon = {
+                id: 0,
+                time: new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' }) + ' (مضاف يدوياً)',
+                items: [...histBonTemp],
+                total: bonTotalSell,
+                totalCost: bonTotalCost,
+                profit: bonTotalProfit
+            };
+
+            bonsHistory.push(newBon);
+            bonsHistory = normalizeBons(bonsHistory);
+
+            let totalRev = 0, totalCost = 0;
+            salesHistory.forEach(i => {
+                totalRev += i.total;
+                totalCost += ((i.buyPrice || 0) * i.qty);
+            });
+            let netProfit = totalRev - totalCost;
+
+            let zReport = {
+                date: dateStr,
+                revenue: totalRev,
+                cost: totalCost,
+                profit: netProfit,
+                totalBons: bonsHistory.length,
+                closedAt: 'محدث يدوياً',
+                salesItems: salesHistory,
+                allBons: bonsHistory
+            };
+
+            localStorage.setItem('zreport_' + dateStr, JSON.stringify(zReport));
+            localStorage.setItem('archived_sales_' + dateStr, JSON.stringify(salesHistory));
+            localStorage.setItem('archived_bons_' + dateStr, JSON.stringify(bonsHistory));
+
+            closeHistoryBonModal();
+            loadHistoryDateDetails(dateStr);
+            alert('تم إضافة البون للأرشيف بنجاح!');
+        }
+
+        function addDebtItemToCart() {
+            let pName = document.getElementById('debtProductSearch').value.trim();
+            let qty = parseInt(document.getElementById('debtQty').value);
+            let priceInput = document.getElementById('debtPrice').value;
+
+            if (!pName || !products[pName] || isNaN(qty) || qty <= 0) return alert('السلعة غير موجودة أو البيانات ناقصة');
+
+            let price = parseFloat(priceInput);
+            if (isNaN(price)) price = products[pName].sell;
+
+            let buyPrice = products[pName].buy || 0;
+            let totalBuy = qty * buyPrice;
+            debtCart.push({ name: pName, qty, price, buyPrice, total: qty * price, totalBuy: totalBuy });
+            
+            document.getElementById('debtProductSearch').value = '';
+            document.getElementById('debtQty').value = '1';
+            document.getElementById('debtPrice').value = '';
+            renderDebtCartUI();
+        }
+
+        function renderDebtCartUI() {
+            let tbody = document.querySelector('#debtCartTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let total = 0;
+            debtCart.forEach((item, index) => {
+                total += item.total;
+                tbody.innerHTML += `<tr>
+                    <td class="num-col">${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td>${item.qty}</td>
+                    <td class="privacy-hide">${item.price}</td>
+                    <td class="privacy-hide"><b>${item.total}</b></td>
+                    <td><button class="btn-sm btn-delete" onclick="debtCart.splice(${index},1); renderDebtCartUI();">X</button></td>
+                </tr>`;
+            });
+            document.getElementById('debtCartTotal').innerText = `${total} د.ج`;
+        }
+
+        function saveDebtBon(shouldDeduct) {
+            let customer = document.getElementById('debtCustomerName').value.trim();
+            if (!customer) return alert('يرجى إدخال اسم الزبون');
+            if (debtCart.length === 0) return alert('سلة الدين فارغة!');
+
+            let totalSell = 0, totalBuy = 0;
+            debtCart.forEach(item => {
+                totalSell += (item.total || 0);
+                totalBuy += (item.totalBuy || 0);
+                if (shouldDeduct) {
+                    deductStockWithUnboxing(item.name, item.qty);
+                }
+            });
+
+            if (shouldDeduct) {
+                localStorage.setItem('products', JSON.stringify(products));
+                updateProductViews();
+            }
+
+            debts.push({
+                id: Date.now(),
+                customer: customer,
+                date: new Date().toLocaleDateString('ar-DZ') + ' ' + new Date().toLocaleTimeString('ar-DZ', {hour:'2-digit', minute:'2-digit'}),
+                items: JSON.parse(JSON.stringify(debtCart)),
+                totalSell: totalSell,
+                totalBuy: totalBuy,
+                deducted: !!shouldDeduct
+            });
+
+            localStorage.setItem('debts', JSON.stringify(debts));
+            debtCart = [];
+            document.getElementById('debtCustomerName').value = '';
+            renderDebtCartUI();
+            renderDebts();
+            alert(`تم تسجيل الدين باسم (${customer}) بنجاح (${shouldDeduct ? 'مع خصم الستوك' : 'بدون خصم الستوك'})!`);
+        }
+
+        function renderDebts() {
+            let container = document.getElementById('debtsList');
+            if (!container) return;
+            debts = getSafeJSON('debts', []);
+            container.innerHTML = debts.length === 0 ? `<p style="text-align:center;color:#888;">لا توجد ديون مسجلة</p>` : '';
+            let totalSell = 0, totalBuy = 0;
+
+            debts.forEach((d, index) => {
+                totalSell += (d.totalSell || 0);
+                totalBuy += (d.totalBuy || 0);
+                let itemsList = (d.items || []).map(i => `${i.name} (${i.qty}×${i.price})`).join(' ، ');
+                let stockStatusBadge = d.deducted ? `<span style="font-size:10px; color:var(--accent-green);">[منقوص من الستوك]</span>` : `<span style="font-size:10px; color:#eab308;">[غير منقوص من الستوك]</span>`;
+
+                container.innerHTML += `
+                    <div class="bon-card">
+                        <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                            <span style="color:var(--accent-blue);">${d.customer} <small style="color:#aaa;">[${d.date}]</small></span>
+                            <span class="privacy-hide" style="color:#eab308; font-size:14px;">${d.totalSell || 0} د.ج</span>
+                        </div>
+                        <div style="margin:2px 0;">${stockStatusBadge}</div>
+                        <div class="privacy-hide" style="font-size:11px; color:#aaa; margin:4px 0;">${itemsList}</div>
+                        <div style="display:flex; gap:5px; margin-top:6px;">
+                            <button class="btn-sm btn-edit" style="flex:1; background:var(--accent-green); justify-content:center; color:#000; border:none;" onclick="completeDebtPayment(${index})">✔ إتمام الدفع (مبيعات اليوم)</button>
+                            <button class="btn-sm btn-delete" onclick="deleteDebt(${index})">🗑️ حذف</button>
+                        </div>
+                    </div>`;
+            });
+
+            document.getElementById('debtTotalSell').innerText = `${totalSell} د.ج`;
+            document.getElementById('debtTotalProfit').innerText = `${totalSell - totalBuy} د.ج`;
+        }
+
+        function completeDebtPayment(index) {
+            let d = debts[index];
+            if (!d) return;
+            let msg = `تأكيد إتمام الدفع للزبون (${d.customer})؟\n- سيتم إدخال المبيعات إلى يومية اليوم.`;
+            if (!d.deducted) {
+                msg += `\n- نظراً لأن الدين حُفظ سابقاً "بدون نزع"، سيتم الآن خصم السلع من الستوك تلقائياً.`;
+            }
+            
+            if (confirm(msg)) {
+                let salesHistory = getSafeStorageToday('sales_' + today);
+                
+                (d.items || []).forEach(item => {
+                    let bPrice = item.buyPrice || (products[item.name] ? products[item.name].buy : 0);
+                    salesHistory.push({ 
+                        name: `${item.name} (تسديد دين: ${d.customer})`, 
+                        qty: item.qty, 
+                        price: item.price, 
+                        buyPrice: bPrice, 
+                        total: item.total 
+                    });
+                    
+                    if (!d.deducted) {
+                        deductStockWithUnboxing(item.name, item.qty);
+                    }
+                });
+
+                if (!d.deducted) {
+                    localStorage.setItem('products', JSON.stringify(products));
+                    updateProductViews();
+                }
+
+                setSafeStorageToday('sales_' + today, salesHistory);
+
+                debts.splice(index, 1);
+                localStorage.setItem('debts', JSON.stringify(debts));
+                
+                renderDebts();
+                renderDailyReport();
+                alert(`تم إتمام الدفع بنجاح وإدخاله في مبيعات اليوم!`);
+            }
+        }
+
+        function deleteDebt(index) {
+            let d = debts[index];
+            if (!d) return;
+            if (confirm(`حذف دين ${d.customer} نهائياً؟`)) {
+                debts.splice(index, 1);
+                localStorage.setItem('debts', JSON.stringify(debts));
+                renderDebts();
+            }
+        }
+
+        function addToCheckList() {
+            let name = document.getElementById('checkProductSearch').value.trim();
+            let qty = parseInt(document.getElementById('checkQty').value);
+            if (!name || isNaN(qty) || qty <= 0) return;
+            let ex = checkListItems.find(i => i.name.trim().toLowerCase() === name.toLowerCase());
+            if (ex) { ex.qty += qty; } else { checkListItems.push({ name, qty }); }
+            localStorage.setItem('checkListItems', JSON.stringify(checkListItems));
+            document.getElementById('checkProductSearch').value = '';
+            document.getElementById('checkQty').value = '1';
+            let sugg = document.getElementById('checkSuggestions');
+            if (sugg) sugg.style.display = 'none';
+            renderCheckListUI();
+        }
+
+        function renderCheckListUI() {
+            let tbody = document.querySelector('#checkListTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let totalCost = 0;
+            checkListItems.forEach((item, index) => {
+                let unitCost = products[item.name] ? products[item.name].buy : 0;
+                let lineCost = unitCost * item.qty;
+                totalCost += lineCost;
+                tbody.innerHTML += `<tr><td class="num-col">${index + 1}</td><td><b>${item.name}</b></td><td><span class="badge" style="background:#f59e0b; color:#000;">${item.qty}</span></td><td>${lineCost} د.ج</td><td><button class="btn-sm btn-delete" onclick="checkListItems.splice(${index},1); localStorage.setItem('checkListItems', JSON.stringify(checkListItems)); renderCheckListUI();">X</button></td></tr>`;
+            });
+            document.getElementById('checkListTotalCost').innerText = `${totalCost} د.ج`;
+        }
+
+        function clearCheckList() {
+            checkListItems = [];
+            localStorage.setItem('checkListItems', JSON.stringify(checkListItems));
+            renderCheckListUI();
+        }
+
+        function addToCalc() {
+            let name = document.getElementById('calcProductSearch').value.trim();
+            let qty = parseInt(document.getElementById('calcQty').value);
+            let buyPrice = parseFloat(document.getElementById('calcBuyPrice').value);
+            let sellPrice = parseFloat(document.getElementById('calcSellPrice').value);
+
+            if (!name || isNaN(qty) || qty <= 0) return;
+            if (isNaN(buyPrice) && products[name]) buyPrice = products[name].buy;
+            if (isNaN(sellPrice) && products[name]) sellPrice = products[name].sell;
+
+            let exC = calcItems.find(i => i.name.trim().toLowerCase() === name.toLowerCase() && i.buyPrice === buyPrice && i.sellPrice === sellPrice);
+            if (exC) {
+                exC.qty += qty;
+                exC.totalBuy = exC.qty * exC.buyPrice;
+                exC.totalSell = exC.qty * exC.sellPrice;
+            } else {
+                calcItems.push({ name, qty, buyPrice, sellPrice, totalBuy: qty * buyPrice, totalSell: qty * sellPrice });
+            }
+
+            document.getElementById('calcProductSearch').value = '';
+            document.getElementById('calcQty').value = '1';
+            document.getElementById('calcBuyPrice').value = '';
+            document.getElementById('calcSellPrice').value = '';
+            let sugg = document.getElementById('calcSuggestions');
+            if (sugg) sugg.style.display = 'none';
+
+            renderCalcUI();
+        }
+
+        function renderCalcUI() {
+            let tbody = document.querySelector('#calcTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let totalBuy = 0, totalSell = 0;
+            calcItems.forEach((item, index) => {
+                totalBuy += item.totalBuy;
+                totalSell += item.totalSell;
+                tbody.innerHTML += `<tr><td class="num-col">${index + 1}</td><td>${item.name}</td><td><b>${item.qty}</b></td><td>${item.buyPrice}</td><td class="privacy-hide">${item.sellPrice}</td><td class="privacy-hide">${item.totalSell}</td><td><button class="btn-sm btn-delete" onclick="calcItems.splice(${index},1);renderCalcUI();">X</button></td></tr>`;
+            });
+            document.getElementById('calcTotalBuy').innerText = `${totalBuy} د.ج`;
+            document.getElementById('calcTotalSell').innerText = `${totalSell} د.ج`;
+            document.getElementById('calcTotalProfit').innerText = `${totalSell - totalBuy} د.ج`;
+        }
+
+        function clearCalc() { calcItems = []; renderCalcUI(); }
+
+        function showReceipt(dateStr, bonIndex, source) {
+            let bons;
+            if (source === 'today') {
+                bons = getSafeStorageToday('bons_' + dateStr);
+            } else if (source === 'archive') {
+                bons = getSafeJSON('archived_bons_' + dateStr, []);
+            } else {
+                bons = getSafeJSON('archived_bons_' + dateStr, getSafeStorageToday('bons_' + dateStr));
+            }
+            let bon = bons[bonIndex];
+            if (!bon) return alert('لم يتم العثور على البون');
+
+            let rows = '';
+            let totalQty = 0;
+            bon.items.forEach((it, idx) => {
+                totalQty += it.qty;
+                rows += `<tr>
+                    <td>${idx + 1}</td>
+                    <td class="r-name">${it.name}</td>
+                    <td>${it.qty}</td>
+                    <td>${it.price}</td>
+                    <td><b>${it.total}</b></td>
+                </tr>`;
+            });
+
+            let timeClean = String(bon.time || '').replace('(مضاف يدوياً)', '').trim();
+
+            document.getElementById('receiptPaper').innerHTML = `
+                <div class="receipt-brand">ONE<span>POS</span></div>
+                <div class="receipt-sub">إيصال معاملة</div>
+
+                <div class="receipt-meta">
+                    <span>رقم الإيصال: <b>#${bon.id}</b></span>
+                    <span>${dateStr} &nbsp;|&nbsp; ${timeClean}</span>
+                </div>
+
+                <hr class="receipt-divider">
+
+                <table class="receipt-table">
+                    <thead><tr><th>#</th><th style="text-align:right;">السلعة</th><th>الكمية</th><th>السعر</th><th>المجموع</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+
+                <hr class="receipt-divider">
+
+                <div style="display:flex; justify-content:space-between; font-size:12px; color:#6b7280; margin-bottom:8px;">
+                    <span>عدد السلع: ${bon.items.length}</span>
+                    <span>إجمالي الوحدات: ${totalQty}</span>
+                </div>
+                <div class="receipt-total"><span>الإجمالي</span><span class="amt">${bon.total} د.ج</span></div>
+
+                <div class="receipt-thanks">شكراً لتعاملكم معنا 🌟<small>نتمنى لكم يوماً سعيداً</small></div>
+
+                <button class="receipt-close" onclick="closeReceipt()">إغلاق</button>`;
+            document.getElementById('receiptModal').style.display = 'flex';
+        }
+
+        function closeReceipt() { document.getElementById('receiptModal').style.display = 'none'; }
+        function closeReceiptOutside(e) { if (e.target.id === 'receiptModal') closeReceipt(); }
+
+        let quickCart = [];
+
+        function openQuickBonModal() {
+            quickCart = [];
+            renderQuickCartUI();
+            document.getElementById('quickBonModal').style.display = 'flex';
+        }
+
+        function closeQuickBonModal() { document.getElementById('quickBonModal').style.display = 'none'; }
+        function closeQuickBonModalOutside(e) { if (e.target.id === 'quickBonModal') closeQuickBonModal(); }
+
+        function addToQuickCart() {
+            let name = document.getElementById('quickProductSearch').value.trim();
+            let qty = parseInt(document.getElementById('quickQty').value);
+            let priceInput = document.getElementById('quickPrice').value;
+
+            if (!name || !products[name]) return alert('السلعة غير موجودة بالستوك');
+            if (isNaN(qty) || qty <= 0) return alert('كمية غير صالحة');
+
+            let price = parseFloat(priceInput);
+            if (isNaN(price)) price = products[name].sell;
+
+            let existingIndex = quickCart.findIndex(item => item.name === name);
+            let buyPrice = products[name].buy;
+            if (existingIndex > -1) {
+                quickCart[existingIndex].qty += qty;
+                quickCart[existingIndex].price = price;
+                quickCart[existingIndex].total = quickCart[existingIndex].qty * price;
+                quickCart[existingIndex].totalCost = quickCart[existingIndex].qty * buyPrice;
+                quickCart[existingIndex].profit = quickCart[existingIndex].total - quickCart[existingIndex].totalCost;
+            } else {
+                let total = qty * price;
+                let totalCost = qty * buyPrice;
+                quickCart.push({ name, qty, price, buyPrice, totalCost, total, profit: total - totalCost });
+            }
+
+            document.getElementById('quickProductSearch').value = '';
+            document.getElementById('quickQty').value = '1';
+            document.getElementById('quickPrice').value = '';
+            let sugg = document.getElementById('quickSuggestions');
+            if (sugg) sugg.style.display = 'none';
+            renderQuickCartUI();
+        }
+
+        function renderQuickCartUI() {
+            let tbody = document.querySelector('#quickCartTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let total = 0, totalBuy = 0, totalProfit = 0;
+            quickCart.forEach((item, index) => {
+                total += item.total;
+                totalBuy += item.totalCost;
+                totalProfit += item.profit;
+                tbody.innerHTML += `<tr>
+                    <td class="num-col">${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td>${item.qty}</td>
+                    <td>${item.totalCost}</td>
+                    <td class="privacy-hide">${item.price}</td>
+                    <td class="privacy-hide"><b>${item.total}</b></td>
+                    <td class="privacy-hide" style="color:var(--accent-green); font-weight:bold;">${item.profit}</td>
+                    <td><button class="btn-sm btn-delete" onclick="quickCart.splice(${index},1);renderQuickCartUI();">X</button></td>
+                </tr>`;
+            });
+            document.getElementById('quickCartTotalBuy').innerText = `${totalBuy} د.ج`;
+            document.getElementById('quickCartTotal').innerText = `${total} د.ج`;
+            document.getElementById('quickCartTotalProfit').innerText = `${totalProfit} د.ج`;
+        }
+
+        function checkoutQuickBon() {
+            if (quickCart.length === 0) return alert('البون السريع فارغ!');
+
+            let salesHistory = getSafeStorageToday('sales_' + today);
+            let bonsHistory = getSafeStorageToday('bons_' + today);
+            let time = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+
+            let bonTotalCost = 0, bonTotalSell = 0, bonTotalProfit = 0;
+            quickCart.forEach(item => {
+                bonTotalCost += item.totalCost;
+                bonTotalSell += item.total;
+                bonTotalProfit += item.profit;
+            });
+
+            let currentBon = { id: 0, time: time, items: [...quickCart], total: bonTotalSell, totalCost: bonTotalCost, profit: bonTotalProfit, quick: true };
+
+            quickCart.forEach(item => {
+                deductStockWithUnboxing(item.name, item.qty);
+                salesHistory.push(item);
+            });
+
+            bonsHistory.push(currentBon);
+            bonsHistory = normalizeBons(bonsHistory);
+
+            localStorage.setItem('products', JSON.stringify(products));
+            setSafeStorageToday('sales_' + today, salesHistory);
+            setSafeStorageToday('bons_' + today, bonsHistory);
+
+            quickCart = [];
+            renderQuickCartUI();
+            updateProductViews();
+            renderDailyReport();
+            closeQuickBonModal();
+        }
+
+        let editCart = [];
+        let editBonContext = null;
+
+        function openEditBonModal(dateStr, index, source) {
+            let bonsKey = source === 'today' ? ('bons_' + dateStr) : ('archived_bons_' + dateStr);
+            let bonsHistory = source === 'today' ? getSafeStorageToday(bonsKey) : getSafeJSON(bonsKey, []);
+            let bon = bonsHistory[index];
+            if (!bon) return alert('تعذر العثور على البون');
+
+            editBonContext = { dateStr, index, source };
+            editCart = bon.items.map(it => ({ ...it }));
+
+            document.getElementById('editBonLabel').innerText = `#${bon.id} - ${dateStr}`;
+            renderEditCartUI();
+            document.getElementById('editBonModal').style.display = 'flex';
+        }
+
+        function closeEditBonModal() {
+            editBonContext = null;
+            editCart = [];
+            document.getElementById('editBonModal').style.display = 'none';
+        }
+        function closeEditBonModalOutside(e) { if (e.target.id === 'editBonModal') closeEditBonModal(); }
+
+        function addToEditCart() {
+            let name = document.getElementById('editProductSearch').value.trim();
+            let qty = parseInt(document.getElementById('editQty').value);
+            let priceInput = document.getElementById('editPrice').value;
+
+            if (!name || !products[name]) return alert('السلعة غير موجودة بالستوك');
+            if (isNaN(qty) || qty <= 0) return alert('كمية غير صالحة');
+
+            let price = parseFloat(priceInput);
+            if (isNaN(price)) price = products[name].sell;
+
+            let existingIndex = editCart.findIndex(item => item.name === name);
+            let buyPrice = products[name].buy;
+            if (existingIndex > -1) {
+                editCart[existingIndex].qty += qty;
+                editCart[existingIndex].price = price;
+                editCart[existingIndex].total = editCart[existingIndex].qty * price;
+                editCart[existingIndex].totalCost = editCart[existingIndex].qty * buyPrice;
+                editCart[existingIndex].profit = editCart[existingIndex].total - editCart[existingIndex].totalCost;
+            } else {
+                let total = qty * price;
+                let totalCost = qty * buyPrice;
+                editCart.push({ name, qty, price, buyPrice, totalCost, total, profit: total - totalCost });
+            }
+
+            document.getElementById('editProductSearch').value = '';
+            document.getElementById('editQty').value = '1';
+            document.getElementById('editPrice').value = '';
+            let sugg = document.getElementById('editSuggestions');
+            if (sugg) sugg.style.display = 'none';
+            renderEditCartUI();
+        }
+
+        function updateEditCartQty(index, newQty) {
+            newQty = parseInt(newQty);
+            if (isNaN(newQty) || newQty <= 0) return;
+            editCart[index].qty = newQty;
+            editCart[index].totalCost = newQty * editCart[index].buyPrice;
+            editCart[index].total = newQty * editCart[index].price;
+            editCart[index].profit = editCart[index].total - editCart[index].totalCost;
+            renderEditCartUI();
+        }
+
+        function renderEditCartUI() {
+            let tbody = document.querySelector('#editCartTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let total = 0, totalBuy = 0, totalProfit = 0;
+            editCart.forEach((item, index) => {
+                total += item.total;
+                totalBuy += item.totalCost;
+                totalProfit += item.profit;
+                tbody.innerHTML += `<tr>
+                    <td class="num-col">${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td><input type="number" class="qty-input" value="${item.qty}" min="1" onchange="updateEditCartQty(${index}, this.value)"></td>
+                    <td>${item.totalCost}</td>
+                    <td class="privacy-hide">${item.price}</td>
+                    <td class="privacy-hide"><b>${item.total}</b></td>
+                    <td class="privacy-hide" style="color:var(--accent-green); font-weight:bold;">${item.profit}</td>
+                    <td><button class="btn-sm btn-delete" onclick="editCart.splice(${index},1);renderEditCartUI();">X</button></td>
+                </tr>`;
+            });
+            document.getElementById('editCartTotalBuy').innerText = `${totalBuy} د.ج`;
+            document.getElementById('editCartTotal').innerText = `${total} د.ج`;
+            document.getElementById('editCartTotalProfit').innerText = `${totalProfit} د.ج`;
+        }
+
+        function saveEditedBon() {
+            if (!editBonContext) return;
+            if (editCart.length === 0) {
+                return alert('لا يمكن حفظ بون فارغ! لحذف البون كاملاً استخدم زر "حذف وإرجاع" بدلاً من ذلك.');
+            }
+
+            let { dateStr, index, source } = editBonContext;
+            let isToday = source === 'today';
+            let bonsKey = isToday ? ('bons_' + dateStr) : ('archived_bons_' + dateStr);
+            let salesKey = isToday ? ('sales_' + dateStr) : ('archived_sales_' + dateStr);
+
+            let bonsHistory = isToday ? getSafeStorageToday(bonsKey) : getSafeJSON(bonsKey, []);
+            let oldBon = bonsHistory[index];
+            if (!oldBon) { closeEditBonModal(); return alert('تعذر العثور على البون الأصلي'); }
+
+            oldBon.items.forEach(item => {
+                restoreStockSmart(item.name, item.qty);
+            });
+
+            editCart.forEach(item => {
+                deductStockWithUnboxing(item.name, item.qty);
+            });
+            localStorage.setItem('products', JSON.stringify(products));
+
+            let bonTotalCost = 0, bonTotalSell = 0, bonTotalProfit = 0;
+            editCart.forEach(item => {
+                bonTotalCost += item.totalCost;
+                bonTotalSell += item.total;
+                bonTotalProfit += item.profit;
+            });
+
+            bonsHistory[index] = {
+                ...oldBon,
+                items: [...editCart],
+                total: bonTotalSell,
+                totalCost: bonTotalCost,
+                profit: bonTotalProfit,
+                edited: true
+            };
+            
+            if (isToday) {
+                setSafeStorageToday(bonsKey, bonsHistory);
+            } else {
+                localStorage.setItem(bonsKey, JSON.stringify(bonsHistory));
+            }
+
+            let newSales = [];
+            bonsHistory.forEach(b => b.items.forEach(i => newSales.push(i)));
+            
+            if (isToday) {
+                setSafeStorageToday(salesKey, newSales);
+            } else {
+                localStorage.setItem(salesKey, JSON.stringify(newSales));
+            }
+
+            if (!isToday) {
+                let totalRev = 0, totalCost = 0;
+                newSales.forEach(i => { totalRev += i.total; totalCost += ((i.buyPrice || 0) * i.qty); });
+                let zReport = getSafeJSON('zreport_' + dateStr, {});
+                zReport.date = dateStr;
+                zReport.revenue = totalRev;
+                zReport.cost = totalCost;
+                zReport.profit = totalRev - totalCost;
+                zReport.totalBons = bonsHistory.length;
+                zReport.salesItems = newSales;
+                zReport.allBons = bonsHistory;
+                localStorage.setItem('zreport_' + dateStr, JSON.stringify(zReport));
+            }
+
+            closeEditBonModal();
+            updateProductViews();
+
+            if (isToday) {
+                renderDailyReport();
+            } else {
+                loadHistoryDateDetails(dateStr);
+                loadHistoryDaysList();
+            }
+        }
+
+        function loadHistoryDaysList() {
+            let container = document.getElementById('historyDaysContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            let foundDates = new Set();
+            for (let i = 0; i < localStorage.length; i++) {
+                let key = localStorage.key(i);
+                if (key && (key.includes('sales_') || key.includes('zreport_') || key.includes('bons_')) && !key.includes('mirror_')) {
+                    let parts = key.split('_');
+                    let dateStr = parts[parts.length - 1];
+                    if (dateStr && dateStr.includes('-') && dateStr.length >= 8) foundDates.add(dateStr);
+                }
+            }
+            let sortedDates = Array.from(foundDates).sort().reverse();
+            if (sortedDates.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:#888;">لا توجد أيام مؤرشفة</p>`;
+                let detCard = document.getElementById('historyDetailsCard');
+                if (detCard) detCard.style.display = 'none';
+                return;
+            }
+            sortedDates.forEach(dateStr => {
+                let zReport = getSafeJSON('zreport_' + dateStr, null);
+                let cost = zReport ? zReport.cost : 0;
+                let itemDiv = document.createElement('div');
+                itemDiv.className = 'history-day-item';
+                itemDiv.innerHTML = `<div style="display:flex; flex-direction:column; width:100%; gap:4px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-weight:bold; color:var(--accent-blue); white-space:nowrap;">📅 ${dateStr}</span>
+                        <button class="btn-sm btn-delete delete-day-btn" style="padding:4px 8px; flex-shrink:0;">🗑️</button>
+                    </div>
+                    <div style="font-size:12px; color:#eab308; font-weight:bold; white-space:nowrap;">التكلفة: ${cost} د.ج</div>
+                </div>`;
+                
+                itemDiv.addEventListener('click', () => {
+                    let detailsCard = document.getElementById('historyDetailsCard');
+                    if (currentSelectedHistoryDate === dateStr && detailsCard.style.display === 'block') {
+                        detailsCard.style.display = 'none';
+                        currentSelectedHistoryDate = null;
+                    } else {
+                        loadHistoryDateDetails(dateStr);
+                    }
+                });
+                itemDiv.querySelector('.delete-day-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteArchivedDay(dateStr);
+                });
+                container.appendChild(itemDiv);
+            });
+        }
+
+        function loadHistoryDateDetails(dateStr) {
+            currentSelectedHistoryDate = dateStr;
+            let detailsCard = document.getElementById('historyDetailsCard');
+            if (detailsCard) detailsCard.style.display = 'block';
+            document.getElementById('selectedDateTitle').innerText = `تفاصيل يوم: ${dateStr}`;
+            let salesHistory = getSafeJSON('archived_sales_' + dateStr, dateStr === today ? getSafeStorageToday('sales_' + dateStr) : getSafeJSON('sales_' + dateStr, []));
+            let bonsHistory = getSafeJSON('archived_bons_' + dateStr, dateStr === today ? getSafeStorageToday('bons_' + dateStr) : getSafeJSON('bons_' + dateStr, []));
+            
+            if (bonsHistory.length > 0) {
+                bonsHistory = normalizeBons(bonsHistory);
+                if (dateStr === today) {
+                    setSafeStorageToday('bons_' + dateStr, bonsHistory);
+                } else {
+                    localStorage.setItem('archived_bons_' + dateStr, JSON.stringify(bonsHistory));
+                }
+            }
+
+            let zReport = getSafeJSON('zreport_' + dateStr, null);
+            let totalRevenue = 0, totalCost = 0;
+            salesHistory.forEach(item => { totalRevenue += item.total; totalCost += ((item.buyPrice || 0) * item.qty); });
+            document.getElementById('hRevenue').innerText = `${totalRevenue} د.ج`;
+            document.getElementById('hCost').innerText = `${totalCost} د.ج`;
+            document.getElementById('hProfit').innerText = `${totalRevenue - totalCost} د.ج`;
+
+            let zContainer = document.getElementById('zReportContainer');
+            if (zReport && zReport.salesItems) {
+                let itemsSummary = {};
+                zReport.salesItems.forEach(item => {
+                    let bp = item.buyPrice || 0;
+                    if (!itemsSummary[item.name]) itemsSummary[item.name] = { qty: 0, cost: 0, revenue: 0, profit: 0 };
+                    itemsSummary[item.name].qty += item.qty;
+                    itemsSummary[item.name].cost += (bp * item.qty);
+                    itemsSummary[item.name].revenue += item.total;
+                    itemsSummary[item.name].profit += (item.total - (bp * item.qty));
+                });
+                let tableRows = '';
+                let zIdx = 0;
+                for (let itemName in itemsSummary) {
+                    let s = itemsSummary[itemName];
+                    zIdx++;
+                    tableRows += `<tr><td class="num-col">${zIdx}</td><td><b>${itemName}</b></td><td>${s.qty}</td><td>${s.cost} د.ج</td><td class="privacy-hide">${s.revenue} د.ج</td><td class="privacy-hide" style="color:var(--accent-green);">${s.profit} د.ج</td></tr>`;
+                }
+                zContainer.innerHTML = `<div class="z-report-card"><div style="font-weight:bold; color:#eab308; text-align:center;">📑 Z-Report</div><div style="margin-top:8px; overflow-x:auto;"><table><thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th>الشراء</th><th class="privacy-hide">البيع</th><th class="privacy-hide">الفايدة</th></tr></thead><tbody>${tableRows}</tbody></table></div></div>`;
+            } else { if (zContainer) zContainer.innerHTML = ''; }
+
+            let hBonsList = document.getElementById('hBonsList');
+            if (!hBonsList) return;
+            hBonsList.innerHTML = '';
+            if (bonsHistory.length === 0) {
+                hBonsList.innerHTML = `<p style="text-align:center;color:#888;">لا توجد بونات</p>`;
+            } else {
+                for (let i = bonsHistory.length - 1; i >= 0; i--) {
+                    let bon = bonsHistory[i];
+                    let itemsDetail = bon.items.map(it => `${it.name} (${it.qty}×${it.price})`).join(' ، ');
+                    hBonsList.innerHTML += `<div class="bon-card"><div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--accent-blue);"><span>${bon.quick ? '⚡ ' : ''}Bon #${bon.id} [${bon.time}]${bon.edited ? ' <small style=\'color:#eab308;\'>(معدّل)</small>' : ''}</span><span><span class="privacy-hide" style="color:var(--accent-green);">${bon.total} د.ج</span><span class="privacy-show" style="color:#eab308;">تكلفة: ${bon.totalCost || 0} د.ج</span></span></div><div class="privacy-hide" style="font-size:11px; color:#aaa;">${itemsDetail}</div><div style="display:flex; gap:6px; margin-top:6px;"><button class="btn-sm btn-edit" style="padding:4px 10px;" onclick="showReceipt('${dateStr}', ${i}, 'archive')">🧾 إظهار ايصال المعاملة</button><button class="btn-sm" style="padding:4px 10px; background:#eab308; color:#000; border:none;" onclick="openEditBonModal('${dateStr}', ${i}, 'archive')">✏️ تعديل</button></div></div>`;
+                }
+            }
+        }
+
+        function deleteHistoryDay() {
+            if (currentSelectedHistoryDate) {
+                deleteArchivedDay(currentSelectedHistoryDate);
+            } else {
+                alert('يرجى اختيار يوم أولاً من الأرشيف.');
+            }
+        }
+
+        function deleteArchivedDay(dateStr) {
+            if (confirm(`تأكيد حذف أرشيف (${dateStr}) نهائياً؟`)) {
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                    let k = localStorage.key(i);
+                    if (k && k.includes(dateStr)) localStorage.removeItem(k);
+                }
+                if (currentSelectedHistoryDate === dateStr) {
+                    let detCard = document.getElementById('historyDetailsCard');
+                    if (detCard) detCard.style.display = 'none';
+                    currentSelectedHistoryDate = null;
+                }
+                loadHistoryDaysList();
+                alert('تم الحذف بنجاح!');
+            }
+        }
+
+        function exportToCSV() {
+            let bonsHistory = getSafeStorageToday('bons_' + today);
+            if (bonsHistory.length === 0) return alert('لا توجد مبيعات لتصديرها!');
+            let csvContent = "\uFEFF" + "Bon ID,Time,Item,Qty,Unit Price,Total\n";
+            bonsHistory.forEach(bon => {
+                bon.items.forEach(item => { csvContent += `${bon.id},${bon.time},"${item.name}",${item.qty},${item.price},${item.total}\n`; });
+            });
+            let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = `Sales_Report_${today}.csv`;
+            a.click();
+        }
+
+        updateProductViews();
+        renderDailyReport();
+        renderDebts();
+    </script>
+</body>
+</html>
