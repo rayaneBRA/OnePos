@@ -2,13 +2,11 @@
 <html lang="ar" dir="rtl" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ONEPOS - V15</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ONEPOS - Ultra Stable</title>
     
-    <!-- رابط الأيقونة والشعار المربوطة بموقع جيت هاب -->
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
-    
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#eb0029">
     <meta name="mobile-web-app-capable" content="yes">
@@ -40,14 +38,15 @@
             --input-bg: #f9fafb;
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: 'Cairo', sans-serif;
             background-color: var(--bg-body);
             color: var(--text-main);
             margin: 0; padding: 12px;
-            transition: all 0.3s ease;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            user-select: none;
         }
 
         .header {
@@ -160,12 +159,11 @@
         .bon-card { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; margin-bottom: 6px; text-align: inherit; }
         .z-report-card { background: rgba(234, 179, 8, 0.1); border: 2px solid #eab308; border-radius: 8px; padding: 10px; margin-bottom: 10px; text-align: inherit; }
         
-        .history-day-item {
-            display: flex; justify-content: space-between; align-items: center;
-            background: var(--input-bg); border: 1px solid var(--border-color);
-            padding: 10px; border-radius: 8px; margin-bottom: 6px; cursor: pointer; transition: 0.2s;
+        .history-day-card {
+            background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 12px; margin-bottom: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         }
-        .history-day-item:hover { border-color: var(--accent-blue); }
 
         .num-col { color: #888; font-size: 11px; width: 26px; }
 
@@ -261,7 +259,7 @@
     <div class="header">
         <div class="brand">
             <img src="icon.png" onerror="this.style.display='none'">
-            ONE<span>POS</span> <small style="font-size: 10px; color: var(--accent-blue);">V15</small>
+            ONE<span>POS</span> <small style="font-size: 10px; color: var(--accent-blue);">PRO</small>
         </div>
         <div class="header-controls">
             <button class="btn-sm" id="privacyToggleBtn" style="background:#374151; color:#fff; border:none;" onclick="togglePrivacyMode()">🙈 إخفاء الأسعار</button>
@@ -544,25 +542,6 @@
             <h3>📅 الأيام المؤرشفة تلقائياً</h3>
             <div id="historyDaysContainer"></div>
         </div>
-
-        <div class="card" id="historyDetailsCard" style="display:none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 8px;">
-                <h3 id="selectedDateTitle" style="margin:0; border:none; padding:0;">تفاصيل اليوم</h3>
-                <div style="display: flex; gap: 5px;">
-                    <button class="btn-sm btn-edit" onclick="openAddBonToHistoryModal()">➕ إضافة بون منسي</button>
-                    <button class="btn-sm btn-delete" onclick="deleteHistoryDay()">🗑️ حذف اليوم</button>
-                </div>
-            </div>
-            
-            <div id="zReportContainer"></div>
-
-            <div class="stat-box privacy-hide"><span>المبيعات:</span><span id="hRevenue">0 د.ج</span></div>
-            <div class="stat-box"><span>التكلفة:</span><span id="hCost">0 د.ج</span></div>
-            <div class="stat-box profit privacy-hide"><span>صافي الربح:</span><span id="hProfit">0 د.ج</span></div>
-
-            <h4 style="color:var(--accent-blue); margin-top:12px;">🧾 البونات التفصيلية:</h4>
-            <div id="hBonsList" style="max-height: 250px; overflow-y: auto;"></div>
-        </div>
     </div>
 
     <div id="addHistoryBonModal" class="modal-overlay" onclick="closeHistoryBonModalOutside(event)">
@@ -660,7 +639,7 @@
             }
         }
 
-        // ---------- نظام الحماية والأمان المرآتي ضد فقدان البيانات ----------
+        // ---------- نظام الحماية والأمان المرآتي المتقدم ----------
         function getSafeStorageToday(key) {
             let data = getSafeJSON(key, null);
             if (!data || (Array.isArray(data) && data.length === 0)) {
@@ -674,8 +653,10 @@
         }
 
         function setSafeStorageToday(key, value) {
-            localStorage.setItem(key, JSON.stringify(value));
-            localStorage.setItem('mirror_' + key, JSON.stringify(value));
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+                localStorage.setItem('mirror_' + key, JSON.stringify(value));
+            } catch(e) {}
         }
 
         let products = getSafeJSON('products', {});
@@ -742,7 +723,7 @@
                         cost: totalCost,
                         profit: netProfit,
                         totalBons: bonsHistory.length,
-                        closedAt: 'تلقائي (عند نهاية اليوم)',
+                        closedAt: 'تلقائي (حماية الاستئناف)',
                         salesItems: salesHistory,
                         allBons: bonsHistory
                     };
@@ -816,6 +797,21 @@
 
         setTimeout(hideSplash, 1800);
         window.addEventListener('load', hideSplash);
+
+        window.addEventListener('pageshow', function() {
+            syncAndRefreshAll();
+        });
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                syncAndRefreshAll();
+            }
+        });
+
+        function syncAndRefreshAll() {
+            products = getSafeJSON('products', {});
+            renderDailyReport();
+            updateProductViews();
+        }
 
         function toggleSettingsModal() {
             let modal = document.getElementById('settingsModal');
@@ -1423,7 +1419,8 @@
             localStorage.setItem('archived_bons_' + dateStr, JSON.stringify(bonsHistory));
 
             closeHistoryBonModal();
-            loadHistoryDateDetails(dateStr);
+            let detailsDiv = document.getElementById('history_details_' + dateStr);
+            if (detailsDiv) populateHistoryDayContent(dateStr, detailsDiv);
             alert('تم إضافة البون للأرشيف بنجاح!');
         }
 
@@ -1926,7 +1923,7 @@
         function saveEditedBon() {
             if (!editBonContext) return;
             if (editCart.length === 0) {
-                return alert('لا يمكن حفظ بون فارغ! لحذف البون كاملاً استخدم زر "حذف وإرجاع" بدلاً من ذلك.');
+                return alert('لا يمكن حفظ بون فارغ! لحذف البون كاملاً استخدم زر "حذف" بدلاً من ذلك.');
             }
 
             let { dateStr, index, source } = editBonContext;
@@ -1998,7 +1995,8 @@
             if (isToday) {
                 renderDailyReport();
             } else {
-                loadHistoryDateDetails(dateStr);
+                let detailsDiv = document.getElementById('history_details_' + dateStr);
+                if (detailsDiv) populateHistoryDayContent(dateStr, detailsDiv);
                 loadHistoryDaysList();
             }
         }
@@ -2019,45 +2017,51 @@
             let sortedDates = Array.from(foundDates).sort().reverse();
             if (sortedDates.length === 0) {
                 container.innerHTML = `<p style="text-align:center; color:#888;">لا توجد أيام مؤرشفة</p>`;
-                let detCard = document.getElementById('historyDetailsCard');
-                if (detCard) detCard.style.display = 'none';
                 return;
             }
             sortedDates.forEach(dateStr => {
                 let zReport = getSafeJSON('zreport_' + dateStr, null);
                 let cost = zReport ? zReport.cost : 0;
-                let itemDiv = document.createElement('div');
-                itemDiv.className = 'history-day-item';
-                itemDiv.innerHTML = `<div style="display:flex; flex-direction:column; width:100%; gap:4px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="font-weight:bold; color:var(--accent-blue); white-space:nowrap;">📅 ${dateStr}</span>
-                        <button class="btn-sm btn-delete delete-day-btn" style="padding:4px 8px; flex-shrink:0;">🗑️</button>
-                    </div>
-                    <div style="font-size:12px; color:#eab308; font-weight:bold; white-space:nowrap;">التكلفة: ${cost} د.ج</div>
-                </div>`;
                 
-                itemDiv.addEventListener('click', () => {
-                    let detailsCard = document.getElementById('historyDetailsCard');
-                    if (currentSelectedHistoryDate === dateStr && detailsCard.style.display === 'block') {
-                        detailsCard.style.display = 'none';
-                        currentSelectedHistoryDate = null;
-                    } else {
-                        loadHistoryDateDetails(dateStr);
-                    }
-                });
-                itemDiv.querySelector('.delete-day-btn').addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    deleteArchivedDay(dateStr);
-                });
-                container.appendChild(itemDiv);
+                let dayCard = document.createElement('div');
+                dayCard.className = 'history-day-card';
+                dayCard.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleHistoryDayAccordion('${dateStr}', this)">
+                        <div style="display:flex; flex-direction:column; gap:2px;">
+                            <span style="font-weight:bold; color:var(--accent-blue);">📅 ${dateStr}</span>
+                            <span style="font-size:12px; color:#eab308; font-weight:bold;">التكلفة: ${cost} د.ج</span>
+                        </div>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <button class="btn-sm btn-delete" style="padding:4px 8px;" onclick="event.stopPropagation(); deleteArchivedDay('${dateStr}')">🗑️ حذف اليوم</button>
+                            <span style="font-size:14px; color:var(--accent-blue);" class="accordion-arrow">▼</span>
+                        </div>
+                    </div>
+                    <div id="history_details_${dateStr}" style="display:none; margin-top:10px; border-top:1px solid var(--border-color); padding-top:10px;"></div>
+                `;
+                container.appendChild(dayCard);
             });
         }
 
-        function loadHistoryDateDetails(dateStr) {
-            currentSelectedHistoryDate = dateStr;
-            let detailsCard = document.getElementById('historyDetailsCard');
-            if (detailsCard) detailsCard.style.display = 'block';
-            document.getElementById('selectedDateTitle').innerText = `تفاصيل يوم: ${dateStr}`;
+        function toggleHistoryDayAccordion(dateStr, headerEl) {
+            let detailsDiv = document.getElementById('history_details_' + dateStr);
+            let arrow = headerEl.querySelector('.accordion-arrow');
+            
+            if (detailsDiv.style.display === 'block') {
+                detailsDiv.style.display = 'none';
+                if (arrow) arrow.innerText = '▼';
+            } else {
+                document.querySelectorAll('[id^="history_details_"]').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.accordion-arrow').forEach(el => el.innerText = '▼');
+                
+                detailsDiv.style.display = 'block';
+                if (arrow) arrow.innerText = '▲';
+                
+                currentSelectedHistoryDate = dateStr;
+                populateHistoryDayContent(dateStr, detailsDiv);
+            }
+        }
+
+        function populateHistoryDayContent(dateStr, containerEl) {
             let salesHistory = getSafeJSON('archived_sales_' + dateStr, dateStr === today ? getSafeStorageToday('sales_' + dateStr) : getSafeJSON('sales_' + dateStr, []));
             let bonsHistory = getSafeJSON('archived_bons_' + dateStr, dateStr === today ? getSafeStorageToday('bons_' + dateStr) : getSafeJSON('bons_' + dateStr, []));
             
@@ -2073,11 +2077,9 @@
             let zReport = getSafeJSON('zreport_' + dateStr, null);
             let totalRevenue = 0, totalCost = 0;
             salesHistory.forEach(item => { totalRevenue += item.total; totalCost += ((item.buyPrice || 0) * item.qty); });
-            document.getElementById('hRevenue').innerText = `${totalRevenue} د.ج`;
-            document.getElementById('hCost').innerText = `${totalCost} د.ج`;
-            document.getElementById('hProfit').innerText = `${totalRevenue - totalCost} د.ج`;
+            let netProfit = totalRevenue - totalCost;
 
-            let zContainer = document.getElementById('zReportContainer');
+            let zReportHtml = '';
             if (zReport && zReport.salesItems) {
                 let itemsSummary = {};
                 zReport.salesItems.forEach(item => {
@@ -2095,28 +2097,105 @@
                     zIdx++;
                     tableRows += `<tr><td class="num-col">${zIdx}</td><td><b>${itemName}</b></td><td>${s.qty}</td><td>${s.cost} د.ج</td><td class="privacy-hide">${s.revenue} د.ج</td><td class="privacy-hide" style="color:var(--accent-green);">${s.profit} د.ج</td></tr>`;
                 }
-                zContainer.innerHTML = `<div class="z-report-card"><div style="font-weight:bold; color:#eab308; text-align:center;">📑 Z-Report</div><div style="margin-top:8px; overflow-x:auto;"><table><thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th>الشراء</th><th class="privacy-hide">البيع</th><th class="privacy-hide">الفايدة</th></tr></thead><tbody>${tableRows}</tbody></table></div></div>`;
-            } else { if (zContainer) zContainer.innerHTML = ''; }
+                zReportHtml = `<div class="z-report-card"><div style="font-weight:bold; color:#eab308; text-align:center;">📑 Z-Report</div><div style="margin-top:8px; overflow-x:auto;"><table><thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th>الشراء</th><th class="privacy-hide">البيع</th><th class="privacy-hide">الفايدة</th></tr></thead><tbody>${tableRows}</tbody></table></div></div>`;
+            }
 
-            let hBonsList = document.getElementById('hBonsList');
-            if (!hBonsList) return;
-            hBonsList.innerHTML = '';
+            let bonsHtml = '';
             if (bonsHistory.length === 0) {
-                hBonsList.innerHTML = `<p style="text-align:center;color:#888;">لا توجد بونات</p>`;
+                bonsHtml = `<p style="text-align:center;color:#888;">لا توجد بونات</p>`;
             } else {
                 for (let i = bonsHistory.length - 1; i >= 0; i--) {
                     let bon = bonsHistory[i];
                     let itemsDetail = bon.items.map(it => `${it.name} (${it.qty}×${it.price})`).join(' ، ');
-                    hBonsList.innerHTML += `<div class="bon-card"><div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--accent-blue);"><span>${bon.quick ? '⚡ ' : ''}Bon #${bon.id} [${bon.time}]${bon.edited ? ' <small style=\'color:#eab308;\'>(معدّل)</small>' : ''}</span><span><span class="privacy-hide" style="color:var(--accent-green);">${bon.total} د.ج</span><span class="privacy-show" style="color:#eab308;">تكلفة: ${bon.totalCost || 0} د.ج</span></span></div><div class="privacy-hide" style="font-size:11px; color:#aaa;">${itemsDetail}</div><div style="display:flex; gap:6px; margin-top:6px;"><button class="btn-sm btn-edit" style="padding:4px 10px;" onclick="showReceipt('${dateStr}', ${i}, 'archive')">🧾 إظهار ايصال المعاملة</button><button class="btn-sm" style="padding:4px 10px; background:#eab308; color:#000; border:none;" onclick="openEditBonModal('${dateStr}', ${i}, 'archive')">✏️ تعديل</button></div></div>`;
+                    bonsHtml += `
+                        <div class="bon-card">
+                            <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--accent-blue);">
+                                <span>${bon.quick ? '⚡ ' : ''}Bon #${bon.id} [${bon.time}]${bon.edited ? ' <small style=\'color:#eab308;\'>(معدّل)</small>' : ''}</span>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <span class="privacy-hide" style="color:var(--accent-green);">${bon.total} د.ج</span>
+                                    <span class="privacy-show" style="color:#eab308;">تكلفة: ${bon.totalCost || 0} د.ج</span>
+                                    <button class="btn-sm btn-delete" style="padding:2px 6px;" onclick="deleteArchivedBon('${dateStr}', ${i})">🗑️ حذف</button>
+                                </div>
+                            </div>
+                            <div class="privacy-hide" style="font-size:11px; color:#aaa; margin-top:2px;">${itemsDetail}</div>
+                            <div style="display:flex; gap:6px; margin-top:6px;">
+                                <button class="btn-sm btn-edit" style="padding:4px 10px;" onclick="showReceipt('${dateStr}', ${i}, 'archive')">🧾 إظهار ايصال المعاملة</button>
+                                <button class="btn-sm" style="padding:4px 10px; background:#eab308; color:#000; border:none;" onclick="openEditBonModal('${dateStr}', ${i}, 'archive')">✏️ تعديل</button>
+                            </div>
+                        </div>`;
                 }
             }
+
+            containerEl.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight:bold; color:var(--accent-blue); font-size:14px;">تفاصيل اليوم</span>
+                    <button class="btn-sm btn-edit" onclick="openAddBonToHistoryModal()">➕ إضافة بون منسي</button>
+                </div>
+                
+                ${zReportHtml}
+
+                <div class="stat-box privacy-hide"><span>المبيعات:</span><span>${totalRevenue} د.ج</span></div>
+                <div class="stat-box"><span>التكلفة:</span><span>${totalCost} د.ج</span></div>
+                <div class="stat-box profit privacy-hide"><span>صافي الربح:</span><span>${netProfit} د.ج</span></div>
+
+                <h4 style="color:var(--accent-blue); margin:12px 0 6px 0; font-size:13px;">🧾 البونات التفصيلية:</h4>
+                <div style="max-height: 250px; overflow-y: auto;">${bonsHtml}</div>
+            `;
         }
 
-        function deleteHistoryDay() {
-            if (currentSelectedHistoryDate) {
-                deleteArchivedDay(currentSelectedHistoryDate);
-            } else {
-                alert('يرجى اختيار يوم أولاً من الأرشيف.');
+        function deleteArchivedBon(dateStr, bonIndex) {
+            let bonsKey = 'archived_bons_' + dateStr;
+            let salesKey = 'archived_sales_' + dateStr;
+            let bonsHistory = getSafeJSON(bonsKey, []);
+            let targetBon = bonsHistory[bonIndex];
+            if (!targetBon) return;
+
+            if (confirm(`هل أنت متأكد من حذف البون #${targetBon.id} من أرشيف ${dateStr}؟\n- سيتم إرجاع الكميات إلى الستوك.`)) {
+                targetBon.items.forEach(item => {
+                    restoreStockSmart(item.name, item.qty);
+                });
+                localStorage.setItem('products', JSON.stringify(products));
+
+                bonsHistory.splice(bonIndex, 1);
+                bonsHistory = normalizeBons(bonsHistory);
+
+                let newSalesHistory = [];
+                bonsHistory.forEach(b => { b.items.forEach(i => { newSalesHistory.push(i); }); });
+
+                localStorage.setItem(bonsKey, JSON.stringify(bonsHistory));
+                localStorage.setItem(salesKey, JSON.stringify(newSalesHistory));
+
+                let totalRev = 0, totalCost = 0;
+                newSalesHistory.forEach(i => {
+                    totalRev += i.total;
+                    totalCost += ((i.buyPrice || 0) * i.qty);
+                });
+                let netProfit = totalRev - totalCost;
+
+                let zReport = {
+                    date: dateStr,
+                    revenue: totalRev,
+                    cost: totalCost,
+                    profit: netProfit,
+                    totalBons: bonsHistory.length,
+                    closedAt: 'محدث يدوياً (حذف بون)',
+                    salesItems: newSalesHistory,
+                    allBons: bonsHistory
+                };
+                localStorage.setItem('zreport_' + dateStr, JSON.stringify(zReport));
+
+                updateProductViews();
+                let detailsDiv = document.getElementById('history_details_' + dateStr);
+                if (detailsDiv) {
+                    populateHistoryDayContent(dateStr, detailsDiv);
+                }
+                loadHistoryDaysList();
+                // إعادة فتح تفاصيل اليوم بعد التحديث
+                setTimeout(() => {
+                    let div = document.getElementById('history_details_' + dateStr);
+                    if(div) div.style.display = 'block';
+                }, 50);
+                alert('تم حذف البون وإرجاع الستوك بنجاح!');
             }
         }
 
@@ -2125,11 +2204,6 @@
                 for (let i = localStorage.length - 1; i >= 0; i--) {
                     let k = localStorage.key(i);
                     if (k && k.includes(dateStr)) localStorage.removeItem(k);
-                }
-                if (currentSelectedHistoryDate === dateStr) {
-                    let detCard = document.getElementById('historyDetailsCard');
-                    if (detCard) detCard.style.display = 'none';
-                    currentSelectedHistoryDate = null;
                 }
                 loadHistoryDaysList();
                 alert('تم الحذف بنجاح!');
