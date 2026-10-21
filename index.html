@@ -1532,81 +1532,82 @@
             document.getElementById('debtTotalProfit').innerText = `${totalSell - totalBuy} د.ج`;
         }
 
-        // ---------- تم التعديل الجوهري هنا لإدخال المبيعات بالاسم الأصلي للسلعة ----------
+        // ---------- تم إضافة الخيار التفاعلي للمستخدم للتحكم بالستوك عند إتمام الدفع ----------
         function completeDebtPayment(index) {
             let d = debts[index];
             if (!d) return;
-            let msg = `تأكيد إتمام الدفع للزبون (${d.customer})؟\n- سيتم إدخال المبيعات إلى يومية اليوم وتحديث الكميات المباعة بكل سلعة.`;
-            if (!d.deducted) {
-                msg += `\n- نظراً لأن الدين حُفظ سابقاً "بدون نزع"، سيتم الآن خصم السلع من الستوك تلقائياً.`;
-            }
-            
-            if (confirm(msg)) {
-                let salesHistory = getSafeStorageToday('sales_' + today);
-                let bonsHistory = getSafeStorageToday('bons_' + today);
-                let time = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
 
-                let debtItemsFormatted = [];
-                let bonTotalCost = 0, bonTotalSell = 0, bonTotalProfit = 0;
+            // السؤال التفاعلي للتحكم بخصم الستوك بناءً على رغبتك
+            let shouldDeductStock = confirm(
+                `تأكيد إتمام الدفع للزبون (${d.customer})؟\n\n` +
+                `اضغط [موافق / OK] لخصم وتحديث الستوك الآن.\n` +
+                `اضغط [إلغاء / Cancel] لحفظ العملية بالمبيعات اليومية فقط دون المساس بالستوك.`
+            );
 
-                (d.items || []).forEach(item => {
-                    let bPrice = item.buyPrice || (products[item.name] ? products[item.name].buy : 0);
-                    let itemTotal = item.total || (item.qty * item.price);
-                    let itemTotalCost = item.qty * bPrice;
-                    let itemProfit = itemTotal - itemTotalCost;
+            let salesHistory = getSafeStorageToday('sales_' + today);
+            let bonsHistory = getSafeStorageToday('bons_' + today);
+            let time = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
 
-                    let saleItem = { 
-                        name: item.name, // حفظ اسم السلعة كما هو بدون إضافة نصوص إضافية لربطه باليومية
-                        qty: item.qty, 
-                        price: item.price, 
-                        buyPrice: bPrice, 
-                        totalCost: itemTotalCost,
-                        total: itemTotal,
-                        profit: itemProfit
-                    };
+            let debtItemsFormatted = [];
+            let bonTotalCost = 0, bonTotalSell = 0, bonTotalProfit = 0;
 
-                    salesHistory.push(saleItem);
-                    debtItemsFormatted.push(saleItem);
+            (d.items || []).forEach(item => {
+                let bPrice = item.buyPrice || (products[item.name] ? products[item.name].buy : 0);
+                let itemTotal = item.total || (item.qty * item.price);
+                let itemTotalCost = item.qty * bPrice;
+                let itemProfit = itemTotal - itemTotalCost;
 
-                    bonTotalCost += itemTotalCost;
-                    bonTotalSell += itemTotal;
-                    bonTotalProfit += itemProfit;
-
-                    if (!d.deducted) {
-                        deductStockWithUnboxing(item.name, item.qty);
-                    }
-                });
-
-                // إنشاء بون خاص بتسديد الدين للزبون
-                let debtBon = {
-                    id: 0,
-                    time: time,
-                    items: debtItemsFormatted,
-                    total: bonTotalSell,
-                    totalCost: bonTotalCost,
-                    profit: bonTotalProfit,
-                    isDebtPayment: true,
-                    customer: d.customer
+                let saleItem = { 
+                    name: item.name, 
+                    qty: item.qty, 
+                    price: item.price, 
+                    buyPrice: bPrice, 
+                    totalCost: itemTotalCost,
+                    total: itemTotal,
+                    profit: itemProfit
                 };
 
-                bonsHistory.push(debtBon);
-                bonsHistory = normalizeBons(bonsHistory);
+                salesHistory.push(saleItem);
+                debtItemsFormatted.push(saleItem);
 
-                if (!d.deducted) {
-                    localStorage.setItem('products', JSON.stringify(products));
-                    updateProductViews();
+                bonTotalCost += itemTotalCost;
+                bonTotalSell += itemTotal;
+                bonTotalProfit += itemProfit;
+
+                // إجراء التخصيم فقط إذا وافق المستخدم
+                if (shouldDeductStock) {
+                    deductStockWithUnboxing(item.name, item.qty);
                 }
+            });
 
-                setSafeStorageToday('sales_' + today, salesHistory);
-                setSafeStorageToday('bons_' + today, bonsHistory);
+            let debtBon = {
+                id: 0,
+                time: time,
+                items: debtItemsFormatted,
+                total: bonTotalSell,
+                totalCost: bonTotalCost,
+                profit: bonTotalProfit,
+                isDebtPayment: true,
+                customer: d.customer
+            };
 
-                debts.splice(index, 1);
-                localStorage.setItem('debts', JSON.stringify(debts));
-                
-                renderDebts();
-                renderDailyReport();
-                alert(`تم إتمام الدفع بنجاح وإدخاله في مبيعات وسلع اليوم!`);
+            bonsHistory.push(debtBon);
+            bonsHistory = normalizeBons(bonsHistory);
+
+            if (shouldDeductStock) {
+                localStorage.setItem('products', JSON.stringify(products));
+                updateProductViews();
             }
+
+            setSafeStorageToday('sales_' + today, salesHistory);
+            setSafeStorageToday('bons_' + today, bonsHistory);
+
+            debts.splice(index, 1);
+            localStorage.setItem('debts', JSON.stringify(debts));
+            
+            renderDebts();
+            renderDailyReport();
+            alert(`تم إتمام تسديد الدين بنجاح (${shouldDeductStock ? 'تم خصم الستوك' : 'بدون خصم الستوك'})!`);
         }
 
         function deleteDebt(index) {
