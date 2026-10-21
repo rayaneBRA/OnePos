@@ -1269,14 +1269,14 @@
                     bonsContainer.innerHTML += `
                         <div class="bon-card">
                             <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--accent-blue);">
-                                <span>${bon.quick ? '⚡ ' : ''}بون #${bon.id} <small>[${bon.time}]</small>${bon.edited ? ' <small style=\'color:#eab308;\'>(معدّل)</small>' : ''}</span>
+                                <span>${bon.quick ? '⚡ ' : ''}${bon.isDebtPayment ? '📝 ' : ''}بون #${bon.id} <small>[${bon.time}]</small>${bon.edited ? ' <small style=\'color:#eab308;\'>(معدّل)</small>' : ''}</span>
                                 <div style="display:flex; gap:8px; align-items:center;">
                                     <span class="privacy-hide" style="color:var(--accent-green);">${bon.total} د.ج</span>
                                     <span class="privacy-show" style="color:#eab308;">تكلفة: ${bon.totalCost || 0} د.ج</span>
                                     <button class="btn-sm btn-delete" style="padding:2px 6px;" onclick="deleteTodayBon(${i})">🗑️ حذف وإرجاع</button>
                                 </div>
                             </div>
-                            <div class="privacy-hide" style="font-size:11px; color:#aaa; margin-top:2px;">${itemsDetail}</div>
+                            <div class="privacy-hide" style="font-size:11px; color:#aaa; margin-top:2px;">${itemsDetail} ${bon.customer ? `<span style="color:var(--accent-blue);">[تسديد: ${bon.customer}]</span>` : ''}</div>
                             <div style="display:flex; gap:6px; margin-top:6px;">
                                 <button class="btn-sm btn-edit" style="padding:4px 10px;" onclick="showReceipt('${today}', ${i}, 'today')">🧾 إظهار ايصال المعاملة</button>
                                 <button class="btn-sm" style="padding:4px 10px; background:#eab308; color:#000; border:none;" onclick="openEditBonModal('${today}', ${i}, 'today')">✏️ تعديل</button>
@@ -1532,31 +1532,65 @@
             document.getElementById('debtTotalProfit').innerText = `${totalSell - totalBuy} د.ج`;
         }
 
+        // ---------- تم التعديل الجوهري هنا لإدخال المبيعات بالاسم الأصلي للسلعة ----------
         function completeDebtPayment(index) {
             let d = debts[index];
             if (!d) return;
-            let msg = `تأكيد إتمام الدفع للزبون (${d.customer})؟\n- سيتم إدخال المبيعات إلى يومية اليوم.`;
+            let msg = `تأكيد إتمام الدفع للزبون (${d.customer})؟\n- سيتم إدخال المبيعات إلى يومية اليوم وتحديث الكميات المباعة بكل سلعة.`;
             if (!d.deducted) {
                 msg += `\n- نظراً لأن الدين حُفظ سابقاً "بدون نزع"، سيتم الآن خصم السلع من الستوك تلقائياً.`;
             }
             
             if (confirm(msg)) {
                 let salesHistory = getSafeStorageToday('sales_' + today);
-                
+                let bonsHistory = getSafeStorageToday('bons_' + today);
+                let time = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+
+                let debtItemsFormatted = [];
+                let bonTotalCost = 0, bonTotalSell = 0, bonTotalProfit = 0;
+
                 (d.items || []).forEach(item => {
                     let bPrice = item.buyPrice || (products[item.name] ? products[item.name].buy : 0);
-                    salesHistory.push({ 
-                        name: `${item.name} (تسديد دين: ${d.customer})`, 
+                    let itemTotal = item.total || (item.qty * item.price);
+                    let itemTotalCost = item.qty * bPrice;
+                    let itemProfit = itemTotal - itemTotalCost;
+
+                    let saleItem = { 
+                        name: item.name, // حفظ اسم السلعة كما هو بدون إضافة نصوص إضافية لربطه باليومية
                         qty: item.qty, 
                         price: item.price, 
                         buyPrice: bPrice, 
-                        total: item.total 
-                    });
-                    
+                        totalCost: itemTotalCost,
+                        total: itemTotal,
+                        profit: itemProfit
+                    };
+
+                    salesHistory.push(saleItem);
+                    debtItemsFormatted.push(saleItem);
+
+                    bonTotalCost += itemTotalCost;
+                    bonTotalSell += itemTotal;
+                    bonTotalProfit += itemProfit;
+
                     if (!d.deducted) {
                         deductStockWithUnboxing(item.name, item.qty);
                     }
                 });
+
+                // إنشاء بون خاص بتسديد الدين للزبون
+                let debtBon = {
+                    id: 0,
+                    time: time,
+                    items: debtItemsFormatted,
+                    total: bonTotalSell,
+                    totalCost: bonTotalCost,
+                    profit: bonTotalProfit,
+                    isDebtPayment: true,
+                    customer: d.customer
+                };
+
+                bonsHistory.push(debtBon);
+                bonsHistory = normalizeBons(bonsHistory);
 
                 if (!d.deducted) {
                     localStorage.setItem('products', JSON.stringify(products));
@@ -1564,13 +1598,14 @@
                 }
 
                 setSafeStorageToday('sales_' + today, salesHistory);
+                setSafeStorageToday('bons_' + today, bonsHistory);
 
                 debts.splice(index, 1);
                 localStorage.setItem('debts', JSON.stringify(debts));
                 
                 renderDebts();
                 renderDailyReport();
-                alert(`تم إتمام الدفع بنجاح وإدخاله في مبيعات اليوم!`);
+                alert(`تم إتمام الدفع بنجاح وإدخاله في مبيعات وسلع اليوم!`);
             }
         }
 
@@ -2110,14 +2145,14 @@
                     bonsHtml += `
                         <div class="bon-card">
                             <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--accent-blue);">
-                                <span>${bon.quick ? '⚡ ' : ''}Bon #${bon.id} [${bon.time}]${bon.edited ? ' <small style=\'color:#eab308;\'>(معدّل)</small>' : ''}</span>
+                                <span>${bon.quick ? '⚡ ' : ''}${bon.isDebtPayment ? '📝 ' : ''}Bon #${bon.id} [${bon.time}]${bon.edited ? ' <small style=\'color:#eab308;\'>(معدّل)</small>' : ''}</span>
                                 <div style="display:flex; gap:8px; align-items:center;">
                                     <span class="privacy-hide" style="color:var(--accent-green);">${bon.total} د.ج</span>
                                     <span class="privacy-show" style="color:#eab308;">تكلفة: ${bon.totalCost || 0} د.ج</span>
                                     <button class="btn-sm btn-delete" style="padding:2px 6px;" onclick="deleteArchivedBon('${dateStr}', ${i})">🗑️ حذف</button>
                                 </div>
                             </div>
-                            <div class="privacy-hide" style="font-size:11px; color:#aaa; margin-top:2px;">${itemsDetail}</div>
+                            <div class="privacy-hide" style="font-size:11px; color:#aaa; margin-top:2px;">${itemsDetail} ${bon.customer ? `<span style="color:var(--accent-blue);">[تسديد: ${bon.customer}]</span>` : ''}</div>
                             <div style="display:flex; gap:6px; margin-top:6px;">
                                 <button class="btn-sm btn-edit" style="padding:4px 10px;" onclick="showReceipt('${dateStr}', ${i}, 'archive')">🧾 إظهار ايصال المعاملة</button>
                                 <button class="btn-sm" style="padding:4px 10px; background:#eab308; color:#000; border:none;" onclick="openEditBonModal('${dateStr}', ${i}, 'archive')">✏️ تعديل</button>
@@ -2190,7 +2225,6 @@
                     populateHistoryDayContent(dateStr, detailsDiv);
                 }
                 loadHistoryDaysList();
-                // إعادة فتح تفاصيل اليوم بعد التحديث
                 setTimeout(() => {
                     let div = document.getElementById('history_details_' + dateStr);
                     if(div) div.style.display = 'block';
