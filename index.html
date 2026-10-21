@@ -157,7 +157,7 @@
         .badge { background: var(--accent-red); color: white; padding: 2px 5px; border-radius: 4px; font-size: 10px; }
         .badge-warning { background: #eab308; color: #000; }
         .bon-card { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; margin-bottom: 6px; text-align: inherit; }
-        .supply-bon-card { background: rgba(0, 255, 136, 0.05); border: 1px solid var(--accent-green); border-radius: 10px; padding: 10px; margin-bottom: 10px; text-align: inherit; }
+        .supply-bon-card { background: var(--input-bg); border: 1px solid var(--accent-green); border-radius: 10px; padding: 10px; margin-bottom: 10px; text-align: inherit; }
         .z-report-card { background: rgba(234, 179, 8, 0.1); border: 2px solid #eab308; border-radius: 8px; padding: 10px; margin-bottom: 10px; text-align: inherit; }
         
         .history-day-card {
@@ -1086,6 +1086,69 @@
             }
         }
 
+        function toggleSupplyAccordion(bonIndex, headerEl) {
+            let detailsDiv = document.getElementById('supply_details_' + bonIndex);
+            let arrow = headerEl.querySelector('.supply-arrow');
+            
+            if (detailsDiv.style.display === 'block') {
+                detailsDiv.style.display = 'none';
+                if (arrow) arrow.innerText = '▼';
+            } else {
+                detailsDiv.style.display = 'block';
+                if (arrow) arrow.innerText = '▲';
+            }
+        }
+
+        function showSupplyReceipt(bonIndex) {
+            let supplyBons = getSafeJSON('supply_bons_' + today, []);
+            let bon = supplyBons[bonIndex];
+            if (!bon) return alert('لم يتم العثور على البون');
+
+            let rows = '';
+            let totalQty = 0;
+            bon.items.forEach((it, idx) => {
+                totalQty += it.qty;
+                rows += `<tr>
+                    <td>${idx + 1}</td>
+                    <td class="r-name">${it.name}</td>
+                    <td>${it.qty}</td>
+                    <td>${it.buyPrice}</td>
+                    <td><b>${it.totalCost}</b></td>
+                </tr>`;
+            });
+
+            document.getElementById('receiptPaper').innerHTML = `
+                <div class="receipt-brand">ONE<span>POS</span></div>
+                <div class="receipt-sub">إيصال بون مشتروات وبضاعة</div>
+
+                <div class="receipt-meta">
+                    <span>رقم البون: <b>#${bon.id}</b></span>
+                    <span>${today} &nbsp;|&nbsp; ${bon.time}</span>
+                </div>
+
+                <div style="font-size:11px; color:#374151; margin-top:6px; text-align:center; font-weight:bold;">المورد: ${bon.supplier}</div>
+
+                <hr class="receipt-divider">
+
+                <table class="receipt-table">
+                    <thead><tr><th>#</th><th style="text-align:right;">السلعة</th><th>الكمية</th><th>الشراء</th><th>المجموع</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+
+                <hr class="receipt-divider">
+
+                <div style="display:flex; justify-content:space-between; font-size:12px; color:#6b7280; margin-bottom:8px;">
+                    <span>عدد السلع: ${bon.items.length}</span>
+                    <span>إجمالي الوحدات: ${totalQty}</span>
+                </div>
+                <div class="receipt-total"><span>إجمالي التكلفة</span><span class="amt">${bon.totalCost} د.ج</span></div>
+
+                <div class="receipt-thanks">سجل بضاعة جديدة 🚚<small>${bon.addedToStock ? '✔ تمت إضافة الستوك تراكمياً' : '⚠️ بدون زيادة الستوك'}</small></div>
+
+                <button class="receipt-close" onclick="closeReceipt()">إغلاق</button>`;
+            document.getElementById('receiptModal').style.display = 'flex';
+        }
+
         function renderSupplyBonsList() {
             let container = document.getElementById('supplyBonsList');
             if (!container) return;
@@ -1109,33 +1172,42 @@
 
                 container.innerHTML += `
                     <div class="supply-bon-card">
-                        <div style="display:flex; justify-content:space-between; align-items:center; font-weight:bold; color:var(--accent-green); border-bottom:1px dashed var(--border-color); padding-bottom:6px; margin-bottom:8px;">
-                            <span>🚚 بون توريد #${bon.id} <small style="color:var(--text-main);">[${bon.supplier}] - ${bon.time}</small></span>
-                            <div style="display:flex; gap:8px; align-items:center;">
-                                <span style="font-size:14px; color:var(--accent-green);">${bon.totalCost} د.ج</span>
-                                <button class="btn-sm btn-delete" style="padding:2px 6px;" onclick="deleteSupplyBon(${actualIndex})">🗑️ حذف</button>
+                        <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleSupplyAccordion(${actualIndex}, this)">
+                            <div style="display:flex; flex-direction:column; gap:2px;">
+                                <span style="font-weight:bold; color:var(--accent-green);">🚚 بون توريد #${bon.id} <small style="color:var(--text-main);">[${bon.supplier}] - ${bon.time}</small></span>
+                                <span style="font-size:13px; color:var(--accent-green); font-weight:bold;">التكلفة: ${bon.totalCost} د.ج</span>
+                            </div>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <button class="btn-sm btn-delete" style="padding:2px 6px;" onclick="event.stopPropagation(); deleteSupplyBon(${actualIndex})">🗑️ حذف</button>
+                                <span style="font-size:14px; color:var(--accent-green);" class="supply-arrow">▼</span>
                             </div>
                         </div>
 
-                        <div style="overflow-x:auto;">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>#</th>
-                                        <th style="text-align:right;">السلعة</th>
-                                        <th>الكمية الواردة</th>
-                                        <th>الشراء</th>
-                                        <th>إجمالي التكلفة</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${tableRows}
-                                </tbody>
-                            </table>
-                        </div>
+                        <div id="supply_details_${actualIndex}" style="display:none; margin-top:10px; border-top:1px dashed var(--border-color); padding-top:10px;">
+                            <div style="overflow-x:auto;">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th style="text-align:right;">السلعة</th>
+                                            <th>الكمية الواردة</th>
+                                            <th>الشراء</th>
+                                            <th>إجمالي التكلفة</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${tableRows}
+                                    </tbody>
+                                </table>
+                            </div>
 
-                        <div style="font-size:10.5px; margin-top:8px; font-weight:bold; color:${bon.addedToStock ? 'var(--accent-green)' : '#eab308'};">
-                            ${bon.addedToStock ? '✔ تمت إضافة هذه الكميات للستوك تراكمياً' : '⚠️ تم التسجيل فقط دون زيادة الستوك'}
+                            <div style="display:flex; gap:6px; margin-top:10px;">
+                                <button class="btn-sm btn-edit" style="padding:4px 10px;" onclick="showSupplyReceipt(${actualIndex})">🧾 إظهار إيصال البون</button>
+                            </div>
+
+                            <div style="font-size:10.5px; margin-top:8px; font-weight:bold; color:${bon.addedToStock ? 'var(--accent-green)' : '#eab308'};">
+                                ${bon.addedToStock ? '✔ تمت إضافة هذه الكميات للستوك تراكمياً' : '⚠️ تم التسجيل فقط دون زيادة الستوك'}
+                            </div>
                         </div>
                     </div>`;
             });
