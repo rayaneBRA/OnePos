@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ONEPOS - Ultra Stable</title>
+    <title>ONEPOS - Full Stock & Supply Control</title>
     
     <link rel="icon" type="image/png" href="icon.png">
     <link rel="apple-touch-icon" href="icon.png">
@@ -324,6 +324,13 @@
             <div class="stat-box"><span>إجمالي التكلفة (الشراء):</span><span id="quickCartTotalBuy">0 د.ج</span></div>
             <div class="stat-box privacy-hide"><span>إجمالي البون السريع:</span><span id="quickCartTotal">0 د.ج</span></div>
             <div class="stat-box profit privacy-hide"><span>إجمالي الفايدة:</span><span id="quickCartTotalProfit">0 د.ج</span></div>
+            
+            <div style="margin: 8px 0; background: var(--input-bg); padding: 8px; border-radius: 6px; font-size: 12px; text-align: right;">
+                <label style="cursor: pointer; font-weight: bold; color: var(--accent-blue);">
+                    <input type="checkbox" id="quickDeductStock" checked style="width: auto; margin-left: 6px;"> خصم السلع من الستوك عند الحفظ؟
+                </label>
+            </div>
+
             <button class="action-btn" style="background:var(--accent-green); color:#000;" onclick="checkoutQuickBon()">💾 حفظ البون السريع</button>
         </div>
     </div>
@@ -334,7 +341,6 @@
                 <span>✏️ تعديل البون <span id="editBonLabel" style="color:var(--text-main);"></span></span>
                 <button class="btn-sm" style="width: auto; padding: 2px 8px;" onclick="closeEditBonModal()">✕</button>
             </div>
-            <p style="font-size:11px; color:#aaa; margin: -6px 0 10px;">عدّل الكميات أو احذف/أضف سلعة — الستوك والأسعار يتصححون تلقائياً عند الحفظ.</p>
 
             <div class="search-box-wrapper">
                 <input type="text" id="editProductSearch" placeholder="🔍 ابحث لإضافة سلعة..." autocomplete="off" oninput="filterProducts('edit', this.value)">
@@ -362,6 +368,7 @@
 
     <div class="nav-tabs">
         <div class="tab-btn active" onclick="switchTab('posTab', this)">🛒 البيع واليومية</div>
+        <div class="tab-btn" onclick="switchTab('supplyTab', this)" style="border-color: var(--accent-green);">🚚 مشتروات وبضاعة جديدة</div>
         <div class="tab-btn" onclick="switchTab('checkListTab', this)" style="border-color: #f59e0b;">📋 قائمة المراجعة</div>
         <div class="tab-btn" onclick="switchTab('calcTab', this)" style="border-color: var(--accent-purple);">🧮 حاسبة مؤقتة</div>
         <div class="tab-btn" onclick="switchTab('debtTab', this)">📝 الديون</div>
@@ -411,6 +418,12 @@
                 <div class="stat-box privacy-hide"><span>إجمالي المبيعات:</span><span id="cartTotalSell">0 د.ج</span></div>
                 <div class="stat-box profit privacy-hide"><span>إجمالي الفايدة:</span><span id="cartTotalProfit">0 د.ج</span></div>
 
+                <div style="margin: 8px 0; background: var(--input-bg); padding: 8px; border-radius: 6px; font-size: 12px; text-align: right;">
+                    <label style="cursor: pointer; font-weight: bold; color: var(--accent-blue);">
+                        <input type="checkbox" id="saleDeductStock" checked style="width: auto; margin-left: 6px;"> خصم السلع من الستوك عند الحفظ؟
+                    </label>
+                </div>
+
                 <button class="action-btn" style="background:var(--accent-green); color:#000;" onclick="checkout()">حفظ الـ Bon والتفريغ</button>
             </div>
 
@@ -435,7 +448,60 @@
         </div>
     </div>
 
-    <!-- Tab 2: قائمة المراجعة -->
+    <!-- Tab 2: بون المشتروات والبضاعة الجديدة (وارد الشاحنة) -->
+    <div id="supplyTab" class="tab-content">
+        <div class="grid-container">
+            <div class="card">
+                <h3 style="color: var(--accent-green);">🚚 تسجيل بون بضاعة جديدة (وارد الشاحنة)</h3>
+                <input type="text" id="supplySupplierName" placeholder="اسم المورد / الشاحنة / رقم الفاتورة (اختياري)">
+                
+                <div class="search-box-wrapper">
+                    <input type="text" id="supplyProductSearch" placeholder="🔍 ابحث أو اكتب اسم السلعة الجديدة..." autocomplete="off" oninput="filterProducts('supply', this.value)">
+                    <div id="supplySuggestions" class="custom-suggestions"></div>
+                </div>
+
+                <div style="display: flex; gap: 5px; margin-top: 4px;">
+                    <input type="number" id="supplyQty" value="1" placeholder="الكمية الواردة">
+                    <input type="number" id="supplyBuyPrice" placeholder="سعر الشراء (التكلفة للقطعة)">
+                </div>
+                <button class="action-btn" style="background: var(--accent-green); color: #000;" onclick="addToSupplyCart()">+ إضافة لبون المشتريات</button>
+
+                <div style="overflow-x: auto; margin-top: 10px;">
+                    <table id="supplyCartTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>السلعة</th>
+                                <th>الكمية الواردة</th>
+                                <th>تكلفتها</th>
+                                <th>إجمالي التكلفة</th>
+                                <th>إجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="stat-box"><span>إجمالي تكلفة البضاعة الجديدة:</span><span id="supplyCartTotal">0 د.ج</span></div>
+
+                <div style="margin: 10px 0; background: var(--input-bg); padding: 10px; border-radius: 8px; border: 1px dashed var(--accent-green);">
+                    <label style="cursor: pointer; font-weight: bold; color: var(--accent-green); font-size: 13px;">
+                        <input type="checkbox" id="supplyAddToStock" checked style="width: auto; margin-left: 6px;"> ➕ إضافة تراكمية لهذه السلع الجديدة فوق الستوك الحالي؟
+                    </label>
+                    <p style="font-size: 11px; color: #aaa; margin: 4px 0 0 0;">(تزداد الكميات فوق القديم تلقائياً دون حذف الرقم المكتوب سابقاً بالستوك)</p>
+                </div>
+
+                <button class="action-btn" style="background: var(--accent-green); color: #000;" onclick="saveSupplyBon()">💾 حفظ بون المشتريات</button>
+            </div>
+
+            <div class="card">
+                <h3>📜 سجل بونات المشتروات والبضاعة الجديدة</h3>
+                <div id="supplyBonsList" style="max-height: 350px; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab 3: قائمة المراجعة -->
     <div id="checkListTab" class="tab-content">
         <div class="card">
             <h3 style="color: #f59e0b;">📋 تسجيل السلع للمراجعة (لا تؤثر على الستوك)</h3>
@@ -460,7 +526,7 @@
         </div>
     </div>
 
-    <!-- Tab 3: الحاسبة المؤقتة -->
+    <!-- Tab 4: الحاسبة المؤقتة -->
     <div id="calcTab" class="tab-content">
         <div class="card">
             <h3 style="color: var(--accent-purple);">🧮 حاسبة التكلفة والبيع والفايدة (مؤقتة)</h3>
@@ -493,7 +559,7 @@
         </div>
     </div>
 
-    <!-- Tab 4: سجل الديون -->
+    <!-- Tab 5: سجل الديون -->
     <div id="debtTab" class="tab-content">
         <div class="grid-container">
             <div class="card">
@@ -536,7 +602,7 @@
         </div>
     </div>
 
-    <!-- Tab 5: أرشيف الأيام -->
+    <!-- Tab 6: أرشيف الأيام -->
     <div id="historyTab" class="tab-content">
         <div class="card">
             <h3>📅 الأيام المؤرشفة تلقائياً</h3>
@@ -577,7 +643,7 @@
         </div>
     </div>
 
-    <!-- Tab 6: الستوك -->
+    <!-- Tab 7: الستوك -->
     <div id="stockTab" class="tab-content">
         <div class="card">
             <h3>🔍 بحث سريع عن الكمية</h3>
@@ -639,7 +705,6 @@
             }
         }
 
-        // ---------- نظام الحماية والأمان المرآتي المتقدم ----------
         function getSafeStorageToday(key) {
             let data = getSafeJSON(key, null);
             if (!data || (Array.isArray(data) && data.length === 0)) {
@@ -662,6 +727,7 @@
         let products = getSafeJSON('products', {});
         let debts = getSafeJSON('debts', []);
         let checkListItems = getSafeJSON('checkListItems', []);
+        let supplyCart = [];
         let cart = [];
         let debtCart = [];
         let calcItems = [];
@@ -811,6 +877,7 @@
             products = getSafeJSON('products', {});
             renderDailyReport();
             updateProductViews();
+            renderSupplyBonsList();
         }
 
         function toggleSettingsModal() {
@@ -862,6 +929,7 @@
             if (tabId === 'historyTab') loadHistoryDaysList();
             if (tabId === 'debtTab') renderDebts();
             if (tabId === 'checkListTab') renderCheckListUI();
+            if (tabId === 'supplyTab') renderSupplyBonsList();
         }
 
         document.querySelectorAll('.custom-suggestions').forEach(box => {
@@ -908,6 +976,8 @@
                     
                     if (type === 'sale') {
                         document.getElementById('saleCustomPrice').value = p.sell;
+                    } else if (type === 'supply') {
+                        document.getElementById('supplyBuyPrice').value = p.buy;
                     } else if (type === 'calc') {
                         document.getElementById('calcBuyPrice').value = p.buy;
                         document.getElementById('calcSellPrice').value = p.sell;
@@ -931,6 +1001,113 @@
                 document.querySelectorAll('.custom-suggestions').forEach(box => box.style.display = 'none');
             }
         });
+
+        /* --- وظائف بون المشتروات والبضاعة الجديدة --- */
+
+        function addToSupplyCart() {
+            let name = document.getElementById('supplyProductSearch').value.trim();
+            let qty = parseInt(document.getElementById('supplyQty').value);
+            let buyPrice = parseFloat(document.getElementById('supplyBuyPrice').value);
+
+            if (!name || isNaN(qty) || qty <= 0 || isNaN(buyPrice)) return alert('يرجى اختيار/كتابة اسم السلعة وإدخال الكمية وسعر الشراء');
+
+            supplyCart.push({ name, qty, buyPrice, totalCost: qty * buyPrice });
+
+            document.getElementById('supplyProductSearch').value = '';
+            document.getElementById('supplyQty').value = '1';
+            document.getElementById('supplyBuyPrice').value = '';
+            renderSupplyCartUI();
+        }
+
+        function renderSupplyCartUI() {
+            let tbody = document.querySelector('#supplyCartTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let total = 0;
+
+            supplyCart.forEach((item, index) => {
+                total += item.totalCost;
+                tbody.innerHTML += `<tr>
+                    <td class="num-col">${index + 1}</td>
+                    <td><b>${item.name}</b></td>
+                    <td>${item.qty}</td>
+                    <td>${item.buyPrice} د.ج</td>
+                    <td><b>${item.totalCost} د.ج</b></td>
+                    <td><button class="btn-sm btn-delete" onclick="supplyCart.splice(${index},1); renderSupplyCartUI();">X</button></td>
+                </tr>`;
+            });
+
+            document.getElementById('supplyCartTotal').innerText = `${total} د.ج`;
+        }
+
+        function saveSupplyBon() {
+            if (supplyCart.length === 0) return alert('سلة بون المشتروات فارغة!');
+
+            let supplier = document.getElementById('supplySupplierName').value.trim() || 'شاحنة التوريد';
+            let addToStock = document.getElementById('supplyAddToStock').checked;
+            let time = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+
+            let supplyBons = getSafeJSON('supply_bons_' + today, []);
+
+            supplyCart.forEach(item => {
+                if (!products[item.name]) {
+                    products[item.name] = { buy: item.buyPrice, sell: item.buyPrice * 1.2, stock: 0 };
+                }
+
+                products[item.name].buy = item.buyPrice;
+
+                if (addToStock) {
+                    products[item.name].stock += item.qty; // إضافة تراكمية فوق القديم
+                }
+            });
+
+            localStorage.setItem('products', JSON.stringify(products));
+
+            let totalCost = supplyCart.reduce((sum, i) => sum + i.totalCost, 0);
+
+            supplyBons.push({
+                id: supplyBons.length + 1,
+                supplier: supplier,
+                time: time,
+                items: [...supplyCart],
+                totalCost: totalCost,
+                addedToStock: addToStock
+            });
+
+            localStorage.setItem('supply_bons_' + today, JSON.stringify(supplyBons));
+
+            supplyCart = [];
+            document.getElementById('supplySupplierName').value = '';
+            renderSupplyCartUI();
+            updateProductViews();
+            renderSupplyBonsList();
+            alert(`تم حفظ بون المشتروات بنجاح (${addToStock ? 'تمت زيادة الستوك تراكمياً' : 'لم يتم تغيير الستوك'})!`);
+        }
+
+        function renderSupplyBonsList() {
+            let container = document.getElementById('supplyBonsList');
+            if (!container) return;
+            let supplyBons = getSafeJSON('supply_bons_' + today, []);
+
+            container.innerHTML = supplyBons.length === 0 ? `<p style="text-align:center; color:#888;">لا توجد بونات مشتريات مسجلة اليوم بعد</p>` : '';
+
+            supplyBons.slice().reverse().forEach(bon => {
+                let itemsText = bon.items.map(i => `${i.name} (${i.qty}×${i.buyPrice})`).join(' ، ');
+                container.innerHTML += `
+                    <div class="bon-card">
+                        <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--accent-green);">
+                            <span>🚚 بون توريد #${bon.id} [${bon.supplier}] - ${bon.time}</span>
+                            <span>${bon.totalCost} د.ج</span>
+                        </div>
+                        <div style="font-size:11px; color:#aaa; margin-top:4px;">${itemsText}</div>
+                        <div style="font-size:10px; margin-top:2px; color:${bon.addedToStock ? 'var(--accent-green)' : '#eab308'};">
+                            ${bon.addedToStock ? '✔ تمت إضافة الكميات للستوك تراكمياً' : '⚠️ تم التسجيل فقط دون زيادة الستوك'}
+                        </div>
+                    </div>`;
+            });
+        }
+
+        /* --- إدارة الستوك والمبيعات الكاملة --- */
 
         function addProduct() {
             let name = document.getElementById('pName').value.trim();
@@ -1176,6 +1353,7 @@
             let bonsHistory = getSafeStorageToday('bons_' + today);
 
             let time = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+            let shouldDeduct = document.getElementById('saleDeductStock').checked;
             
             let bonTotalCost = 0, bonTotalSell = 0, bonTotalProfit = 0;
             cart.forEach(item => {
@@ -1187,14 +1365,18 @@
             let currentBon = { id: 0, time: time, items: [...cart], total: bonTotalSell, totalCost: bonTotalCost, profit: bonTotalProfit };
             
             cart.forEach(item => {
-                deductStockWithUnboxing(item.name, item.qty);
+                if (shouldDeduct) {
+                    deductStockWithUnboxing(item.name, item.qty);
+                }
                 salesHistory.push(item);
             });
 
             bonsHistory.push(currentBon);
             bonsHistory = normalizeBons(bonsHistory);
 
-            localStorage.setItem('products', JSON.stringify(products));
+            if (shouldDeduct) {
+                localStorage.setItem('products', JSON.stringify(products));
+            }
             setSafeStorageToday('sales_' + today, salesHistory);
             setSafeStorageToday('bons_' + today, bonsHistory);
 
@@ -1511,7 +1693,7 @@
                 totalSell += (d.totalSell || 0);
                 totalBuy += (d.totalBuy || 0);
                 let itemsList = (d.items || []).map(i => `${i.name} (${i.qty}×${i.price})`).join(' ، ');
-                let stockStatusBadge = d.deducted ? `<span style="font-size:10px; color:var(--accent-green);">[منقوص من الستوك]</span>` : `<span style="font-size:10px; color:#eab308;">[غير منقوص من الستوك]</span>`;
+                let stockStatusBadge = d.deducted ? `<span style="font-size:10px; color:var(--accent-green);">[خصم سابقاً من الستوك]</span>` : `<span style="font-size:10px; color:#eab308;">[لم يخصم بعد من الستوك]</span>`;
 
                 container.innerHTML += `
                     <div class="bon-card">
@@ -1522,7 +1704,7 @@
                         <div style="margin:2px 0;">${stockStatusBadge}</div>
                         <div class="privacy-hide" style="font-size:11px; color:#aaa; margin:4px 0;">${itemsList}</div>
                         <div style="display:flex; gap:5px; margin-top:6px;">
-                            <button class="btn-sm btn-edit" style="flex:1; background:var(--accent-green); justify-content:center; color:#000; border:none;" onclick="completeDebtPayment(${index})">✔ إتمام الدفع (مبيعات اليوم)</button>
+                            <button class="btn-sm btn-edit" style="flex:1; background:var(--accent-green); justify-content:center; color:#000; border:none;" onclick="completeDebtPayment(${index})">✔ إتمام الدفع وتسجيل المبيعات</button>
                             <button class="btn-sm btn-delete" onclick="deleteDebt(${index})">🗑️ حذف</button>
                         </div>
                     </div>`;
@@ -1532,16 +1714,14 @@
             document.getElementById('debtTotalProfit').innerText = `${totalSell - totalBuy} د.ج`;
         }
 
-        // ---------- تم إضافة الخيار التفاعلي للمستخدم للتحكم بالستوك عند إتمام الدفع ----------
         function completeDebtPayment(index) {
             let d = debts[index];
             if (!d) return;
 
-            // السؤال التفاعلي للتحكم بخصم الستوك بناءً على رغبتك
             let shouldDeductStock = confirm(
-                `تأكيد إتمام الدفع للزبون (${d.customer})؟\n\n` +
-                `اضغط [موافق / OK] لخصم وتحديث الستوك الآن.\n` +
-                `اضغط [إلغاء / Cancel] لحفظ العملية بالمبيعات اليومية فقط دون المساس بالستوك.`
+                `تأكيد سداد الدين للزبون (${d.customer})؟\n\n` +
+                `اضغط [موافق / OK] إذا أردت تنقيص/تعديل الستوك بالسلع المسددة.\n` +
+                `اضغط [إلغاء / Cancel] لحفظ المعاملة باليومية وبالمبيعات فقط دون الخصم من الستوك.`
             );
 
             let salesHistory = getSafeStorageToday('sales_' + today);
@@ -1574,7 +1754,6 @@
                 bonTotalSell += itemTotal;
                 bonTotalProfit += itemProfit;
 
-                // إجراء التخصيم فقط إذا وافق المستخدم
                 if (shouldDeductStock) {
                     deductStockWithUnboxing(item.name, item.qty);
                 }
@@ -1607,7 +1786,7 @@
             
             renderDebts();
             renderDailyReport();
-            alert(`تم إتمام تسديد الدين بنجاح (${shouldDeductStock ? 'تم خصم الستوك' : 'بدون خصم الستوك'})!`);
+            alert(`تم السداد بنجاح وتسجيله باليومية (${shouldDeductStock ? 'مع تعديل الستوك' : 'بدون تعديل الستوك'})!`);
         }
 
         function deleteDebt(index) {
@@ -1835,6 +2014,7 @@
             let salesHistory = getSafeStorageToday('sales_' + today);
             let bonsHistory = getSafeStorageToday('bons_' + today);
             let time = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+            let shouldDeduct = document.getElementById('quickDeductStock').checked;
 
             let bonTotalCost = 0, bonTotalSell = 0, bonTotalProfit = 0;
             quickCart.forEach(item => {
@@ -1846,14 +2026,18 @@
             let currentBon = { id: 0, time: time, items: [...quickCart], total: bonTotalSell, totalCost: bonTotalCost, profit: bonTotalProfit, quick: true };
 
             quickCart.forEach(item => {
-                deductStockWithUnboxing(item.name, item.qty);
+                if (shouldDeduct) {
+                    deductStockWithUnboxing(item.name, item.qty);
+                }
                 salesHistory.push(item);
             });
 
             bonsHistory.push(currentBon);
             bonsHistory = normalizeBons(bonsHistory);
 
-            localStorage.setItem('products', JSON.stringify(products));
+            if (shouldDeduct) {
+                localStorage.setItem('products', JSON.stringify(products));
+            }
             setSafeStorageToday('sales_' + today, salesHistory);
             setSafeStorageToday('bons_' + today, bonsHistory);
 
@@ -2263,6 +2447,7 @@
         updateProductViews();
         renderDailyReport();
         renderDebts();
+        renderSupplyBonsList();
     </script>
 </body>
 </html>
