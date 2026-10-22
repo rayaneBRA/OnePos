@@ -1004,7 +1004,6 @@
                 }
             }
 
-            // ترتيب المفاتيح تصاعدياً بحسب التاريخ
             dateKeys.sort();
 
             let globalId = 1;
@@ -1012,16 +1011,14 @@
                 let dateStr = key.replace('supply_bons_', '');
                 let bons = getSafeJSON(key, []);
                 
-                // فرز بونات اليوم الواحد بالوقت
                 bons.sort((a, b) => parseTimeValue(a.time) - parseTimeValue(b.time));
 
                 bons.forEach(b => {
                     allBons.push({
                         ...b,
-                        displayId: globalId++, // ترقيم تسلسلي تصاعدي واضح
+                        displayId: globalId++,
                         date: b.date || dateStr,
-                        storageKey: key,
-                        timestamp: new Date((b.date || dateStr) + ' ' + (b.timeRaw || b.time || '00:00')).getTime() || 0
+                        storageKey: key
                     });
                 });
             });
@@ -1091,7 +1088,7 @@
             let totalCost = supplyCart.reduce((sum, i) => sum + i.totalCost, 0);
 
             supplyBons.push({
-                id: Date.now(), // معرّف فريد
+                id: Date.now(),
                 date: today,
                 supplier: supplier,
                 time: time,
@@ -1193,7 +1190,6 @@
 
             container.innerHTML = allSupplyBons.length === 0 ? `<p style="text-align:center; color:#888;">لا توجد بونات مشتريات مسجلة بعد</p>` : '';
 
-            // العرض: ترتيب أحدث البونات في الأعلى دائماً
             allSupplyBons.slice().reverse().forEach((bon, displayIdx) => {
                 let tableRows = '';
                 bon.items.forEach((item, idx) => {
@@ -1390,7 +1386,6 @@
             document.getElementById('pAddStockQty').value = '';
             document.getElementById('pName').value = '';
             document.getElementById('pBuyPrice').value = '';
-            document.getElementById('pSellPrice').value = '';
             document.getElementById('pStock').value = '';
             document.getElementById('pParentName').value = '';
             document.getElementById('pPackRatio').value = '';
@@ -1605,6 +1600,8 @@
             }
         }
 
+        /* --- دالة إغلاق اليومية المحدثة والشاملة لتنظيف الذاكرة المباشرة والاحتياطية --- */
+
         function closeDay() {
             let salesHistory = getSafeStorageToday('sales_' + today);
             let bonsHistory = getSafeStorageToday('bons_' + today);
@@ -1615,7 +1612,15 @@
             let allSales = [...archivedSales, ...salesHistory];
             let allBons = normalizeBons([...archivedBons, ...bonsHistory]);
 
-            if (allSales.length === 0 && allBons.length === 0) return alert('لا توجد مبيعات لإغلاقها!');
+            if (allSales.length === 0 && allBons.length === 0) {
+                // إذا وجد مسح سابق ولكنه معلق بالذاكرة، قم بتفريغ الشاشة فوراً
+                localStorage.removeItem('sales_' + today);
+                localStorage.removeItem('bons_' + today);
+                localStorage.removeItem('mirror_sales_' + today);
+                localStorage.removeItem('mirror_bons_' + today);
+                renderDailyReport();
+                return alert('اليومية مغلقة ومفرغة بالفعل!');
+            }
 
             let totalRevenue = 0, totalCost = 0;
             allSales.forEach(item => { 
@@ -1636,18 +1641,21 @@
                     allBons: allBons 
                 };
                 
+                // حفظ التقرير النهائي بذاكرة الأرشيف
                 localStorage.setItem('zreport_' + today, JSON.stringify(zReport));
                 localStorage.setItem('archived_sales_' + today, JSON.stringify(allSales));
                 localStorage.setItem('archived_bons_' + today, JSON.stringify(allBons));
                 
+                // تفريغ كافة مفاتيح الذاكرة الرئيسية والاحتياطية لليوم لتفادي استرجاع البونات تلقائياً
                 localStorage.removeItem('sales_' + today);
                 localStorage.removeItem('bons_' + today);
                 localStorage.removeItem('mirror_sales_' + today);
                 localStorage.removeItem('mirror_bons_' + today);
 
+                // إجبار الشاشة على إعادة التحديث وتفريغ القائمة
                 renderDailyReport();
                 loadHistoryDaysList();
-                alert('تم إغلاق اليومية بنجاح ونقل كافة البيانات والحسابات للأرشيف النهائي!');
+                alert('تم إغلاق اليومية بنجاح ونقل كافة البيانات للحفظ والأرشيف، وتفريغ الشاشة بالكامل!');
             }
         }
 
