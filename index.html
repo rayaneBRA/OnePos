@@ -991,7 +991,26 @@
             }
         });
 
-        /* --- وظائف بون المشتروات والبضاعة الجديدة --- */
+        /* --- وظائف بون المشتروات والبضاعة الجديدة المحدثة تضمن جلب كل الأيام --- */
+
+        function getAllSupplyBonsCombined() {
+            let allBons = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                let key = localStorage.key(i);
+                if (key && key.startsWith('supply_bons_')) {
+                    let dateStr = key.replace('supply_bons_', '');
+                    let bons = getSafeJSON(key, []);
+                    bons.forEach(b => {
+                        allBons.push({
+                            ...b,
+                            date: b.date || dateStr,
+                            storageKey: key
+                        });
+                    });
+                }
+            }
+            return allBons;
+        }
 
         function addToSupplyCart() {
             let name = document.getElementById('supplyProductSearch').value.trim();
@@ -1046,7 +1065,7 @@
                 products[item.name].buy = item.buyPrice;
 
                 if (addToStock) {
-                    products[item.name].stock += item.qty; // إضافة تراكمية فوق القديم
+                    products[item.name].stock += item.qty;
                 }
             });
 
@@ -1056,6 +1075,7 @@
 
             supplyBons.push({
                 id: supplyBons.length + 1,
+                date: today,
                 supplier: supplier,
                 time: time,
                 items: [...supplyCart],
@@ -1073,21 +1093,20 @@
             alert(`تم حفظ بون المشتروات بنجاح (${addToStock ? 'تمت زيادة الستوك تراكمياً' : 'لم يتم تغيير الستوك'})!`);
         }
 
-        function deleteSupplyBon(bonIndex) {
-            let supplyBons = getSafeJSON('supply_bons_' + today, []);
-            let targetBon = supplyBons[bonIndex];
-            if (!targetBon) return;
+        function deleteSupplyBonGlobal(storageKey, bonId) {
+            let supplyBons = getSafeJSON(storageKey, []);
+            let bonIndex = supplyBons.findIndex(b => b.id === bonId);
+            if (bonIndex === -1) return;
 
-            if (confirm(`حذف بون المشتروات #${targetBon.id}؟\nتنبيه: إذا كانت الكميات أضيفت للستوك، لن تتخصم تلقائياً لتفادي خبط الأرقام.`)) {
+            if (confirm(`حذف بون المشتروات #${bonId}؟\nتنبيه: لن تتخصم الكميات تلقائياً لتفادي أي لخطبة بالستوك.`)) {
                 supplyBons.splice(bonIndex, 1);
-                supplyBons.forEach((b, idx) => { b.id = idx + 1; });
-                localStorage.setItem('supply_bons_' + today, JSON.stringify(supplyBons));
+                localStorage.setItem(storageKey, JSON.stringify(supplyBons));
                 renderSupplyBonsList();
             }
         }
 
-        function toggleSupplyAccordion(bonIndex, headerEl) {
-            let detailsDiv = document.getElementById('supply_details_' + bonIndex);
+        function toggleSupplyAccordion(idx, headerEl) {
+            let detailsDiv = document.getElementById('supply_details_' + idx);
             let arrow = headerEl.querySelector('.supply-arrow');
             
             if (detailsDiv.style.display === 'block') {
@@ -1099,9 +1118,9 @@
             }
         }
 
-        function showSupplyReceipt(bonIndex) {
-            let supplyBons = getSafeJSON('supply_bons_' + today, []);
-            let bon = supplyBons[bonIndex];
+        function showSupplyReceiptGlobal(storageKey, bonId) {
+            let supplyBons = getSafeJSON(storageKey, []);
+            let bon = supplyBons.find(b => b.id === bonId);
             if (!bon) return alert('لم يتم العثور على البون');
 
             let rows = '';
@@ -1123,7 +1142,7 @@
 
                 <div class="receipt-meta">
                     <span>رقم البون: <b>#${bon.id}</b></span>
-                    <span>${today} &nbsp;|&nbsp; ${bon.time}</span>
+                    <span>${bon.date || today} &nbsp;|&nbsp; ${bon.time}</span>
                 </div>
 
                 <div style="font-size:11px; color:#374151; margin-top:6px; text-align:center; font-weight:bold;">المورد: ${bon.supplier}</div>
@@ -1152,13 +1171,13 @@
         function renderSupplyBonsList() {
             let container = document.getElementById('supplyBonsList');
             if (!container) return;
-            let supplyBons = getSafeJSON('supply_bons_' + today, []);
+            
+            let allSupplyBons = getAllSupplyBonsCombined();
 
-            container.innerHTML = supplyBons.length === 0 ? `<p style="text-align:center; color:#888;">لا توجد بونات مشتريات مسجلة اليوم بعد</p>` : '';
+            container.innerHTML = allSupplyBons.length === 0 ? `<p style="text-align:center; color:#888;">لا توجد بونات مشتريات مسجلة بعد</p>` : '';
 
-            supplyBons.slice().reverse().forEach((bon, reverseIndex) => {
-                let actualIndex = supplyBons.length - 1 - reverseIndex;
-                
+            // ترتيب بونات المشتريات من الأحدث إلى الأقدم
+            allSupplyBons.reverse().forEach((bon, displayIdx) => {
                 let tableRows = '';
                 bon.items.forEach((item, idx) => {
                     tableRows += `<tr>
@@ -1172,18 +1191,18 @@
 
                 container.innerHTML += `
                     <div class="supply-bon-card">
-                        <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleSupplyAccordion(${actualIndex}, this)">
+                        <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleSupplyAccordion(${displayIdx}, this)">
                             <div style="display:flex; flex-direction:column; gap:2px;">
-                                <span style="font-weight:bold; color:var(--accent-green);">🚚 بون توريد #${bon.id} <small style="color:var(--text-main);">[${bon.supplier}] - ${bon.time}</small></span>
+                                <span style="font-weight:bold; color:var(--accent-green);">🚚 بون توريد #${bon.id} <small style="color:var(--text-main);">[${bon.supplier}] - 📅 ${bon.date} (${bon.time})</small></span>
                                 <span style="font-size:13px; color:var(--accent-green); font-weight:bold;">التكلفة: ${bon.totalCost} د.ج</span>
                             </div>
                             <div style="display:flex; gap:6px; align-items:center;">
-                                <button class="btn-sm btn-delete" style="padding:2px 6px;" onclick="event.stopPropagation(); deleteSupplyBon(${actualIndex})">🗑️ حذف</button>
+                                <button class="btn-sm btn-delete" style="padding:2px 6px;" onclick="event.stopPropagation(); deleteSupplyBonGlobal('${bon.storageKey}', ${bon.id})">🗑️ حذف</button>
                                 <span style="font-size:14px; color:var(--accent-green);" class="supply-arrow">▼</span>
                             </div>
                         </div>
 
-                        <div id="supply_details_${actualIndex}" style="display:none; margin-top:10px; border-top:1px dashed var(--border-color); padding-top:10px;">
+                        <div id="supply_details_${displayIdx}" style="display:none; margin-top:10px; border-top:1px dashed var(--border-color); padding-top:10px;">
                             <div style="overflow-x:auto;">
                                 <table>
                                     <thead>
@@ -1202,7 +1221,7 @@
                             </div>
 
                             <div style="display:flex; gap:6px; margin-top:10px;">
-                                <button class="btn-sm btn-edit" style="padding:4px 10px;" onclick="showSupplyReceipt(${actualIndex})">🧾 إظهار إيصال البون</button>
+                                <button class="btn-sm btn-edit" style="padding:4px 10px;" onclick="showSupplyReceiptGlobal('${bon.storageKey}', ${bon.id})">🧾 إظهار إيصال البون</button>
                             </div>
 
                             <div style="font-size:10.5px; margin-top:8px; font-weight:bold; color:${bon.addedToStock ? 'var(--accent-green)' : '#eab308'};">
@@ -1573,7 +1592,6 @@
             let salesHistory = getSafeStorageToday('sales_' + today);
             let bonsHistory = getSafeStorageToday('bons_' + today);
             
-            // محاولة جلب الأرشيف السابق إن وجد لإضافة السجل عليه
             let archivedSales = getSafeJSON('archived_sales_' + today, []);
             let archivedBons = getSafeJSON('archived_bons_' + today, []);
 
@@ -1605,7 +1623,6 @@
                 localStorage.setItem('archived_sales_' + today, JSON.stringify(allSales));
                 localStorage.setItem('archived_bons_' + today, JSON.stringify(allBons));
                 
-                // تفريغ السجلات النشطة للليومية الحالية
                 localStorage.removeItem('sales_' + today);
                 localStorage.removeItem('bons_' + today);
                 localStorage.removeItem('mirror_sales_' + today);
