@@ -437,7 +437,7 @@
         </div>
     </div>
 
-    <!-- Tab 2: بون المشتروات والبضاعة الجديدة (وارد الشاحنة) -->
+    <!-- Tab 2: بون المشتروات والبضاعة الجديدة -->
     <div id="supplyTab" class="tab-content">
         <div class="grid-container">
             <div class="card">
@@ -696,20 +696,19 @@
 
         function getSafeStorageToday(key) {
             let data = getSafeJSON(key, null);
-            if (!data || (Array.isArray(data) && data.length === 0)) {
-                let mirrorData = getSafeJSON('mirror_' + key, null);
-                if (mirrorData && Array.isArray(mirrorData) && mirrorData.length > 0) {
-                    localStorage.setItem(key, JSON.stringify(mirrorData));
-                    return mirrorData;
-                }
+            if (!data || !Array.isArray(data) || data.length === 0) {
+                // إذا كان مفتاح اليوم ممسوحاً أو فارغاً، لا ترجع النسخة الاحتياطية لتفادي الاسترجاع التلقائي
+                return [];
             }
-            return data || [];
+            // فلترة أي عنصر فارغ أو مكسور
+            return data.filter(item => item && typeof item === 'object' && Object.keys(item).length > 0);
         }
 
         function setSafeStorageToday(key, value) {
             try {
-                localStorage.setItem(key, JSON.stringify(value));
-                localStorage.setItem('mirror_' + key, JSON.stringify(value));
+                let cleanData = Array.isArray(value) ? value.filter(item => item && typeof item === 'object' && Object.keys(item).length > 0) : value;
+                localStorage.setItem(key, JSON.stringify(cleanData));
+                localStorage.setItem('mirror_' + key, JSON.stringify(cleanData));
             } catch(e) {}
         }
 
@@ -752,7 +751,7 @@
             let pastUnclosedDates = new Set();
             for (let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
-                if (key && (key.startsWith('sales_') || key.startsWith('bons_'))) {
+                if (key && (key.startsWith('sales_') || key.startsWith('bons_')) && !key.startsWith('mirror_') && !key.startsWith('archived_')) {
                     let dateStr = key.replace('sales_', '').replace('bons_', '');
                     if (dateStr && dateStr < today && dateStr.length >= 8) {
                         pastUnclosedDates.add(dateStr);
@@ -767,7 +766,7 @@
                 if (salesHistory.length > 0 || bonsHistory.length > 0) {
                     let totalRevenue = 0, totalCost = 0;
                     salesHistory.forEach(item => {
-                        totalRevenue += item.total;
+                        totalRevenue += item.total || 0;
                         totalCost += ((item.buyPrice || 0) * item.qty);
                     });
                     let netProfit = totalRevenue - totalCost;
@@ -811,11 +810,13 @@
             return h * 60 + m;
         }
 
+        // ترقيم المجموعات اليومية بشكل سليم من 1 متصاعداً وتصفية أي عناصر فارغة
         function normalizeBons(bonsArray) {
             if (!Array.isArray(bonsArray)) return [];
-            bonsArray.sort((a, b) => parseTimeValue(a.time) - parseTimeValue(b.time));
-            bonsArray.forEach((b, idx) => { b.id = idx + 1; });
-            return bonsArray;
+            let validBons = bonsArray.filter(b => b && typeof b === 'object' && Array.isArray(b.items) && b.items.length > 0);
+            validBons.sort((a, b) => parseTimeValue(a.time) - parseTimeValue(b.time));
+            validBons.forEach((b, idx) => { b.id = idx + 1; });
+            return validBons;
         }
 
         let initBons = getSafeStorageToday('bons_' + today);
@@ -991,7 +992,7 @@
             }
         });
 
-        /* --- وظائف بون المشتروات والبضاعة الجديدة المحدثة - تصحيح الفرز والتسلسل الأنيق --- */
+        /* --- بون المشتروات --- */
 
         function getAllSupplyBonsCombined() {
             let allBons = [];
@@ -1245,7 +1246,7 @@
             });
         }
 
-        /* --- إدارة الستوك والمبيعات الكاملة --- */
+        /* --- إدارة الستوك والمبيعات --- */
 
         function addProduct() {
             let name = document.getElementById('pName').value.trim();
@@ -1524,9 +1525,11 @@
             if (!targetBon) return;
 
             if (confirm(`هل أنت متأكد من حذف البون #${targetBon.id}؟`)) {
-                targetBon.items.forEach(item => {
-                    restoreStockSmart(item.name, item.qty);
-                });
+                if (targetBon.items && Array.isArray(targetBon.items)) {
+                    targetBon.items.forEach(item => {
+                        restoreStockSmart(item.name, item.qty);
+                    });
+                }
                 localStorage.setItem('products', JSON.stringify(products));
 
                 bonsHistory.splice(bonIndex, 1);
@@ -1535,7 +1538,7 @@
                 setSafeStorageToday('bons_' + today, bonsHistory);
 
                 let newSalesHistory = [];
-                bonsHistory.forEach(b => { b.items.forEach(i => { newSalesHistory.push(i); }); });
+                bonsHistory.forEach(b => { if (b.items) b.items.forEach(i => { newSalesHistory.push(i); }); });
                 setSafeStorageToday('sales_' + today, newSalesHistory);
 
                 updateProductViews();
@@ -1551,11 +1554,11 @@
             let summary = {}, totalRevenue = 0, totalCost = 0;
 
             salesHistory.forEach(item => {
-                totalRevenue += item.total;
-                totalCost += ((item.buyPrice || 0) * item.qty);
+                totalRevenue += (item.total || 0);
+                totalCost += ((item.buyPrice || 0) * (item.qty || 0));
                 if (!summary[item.name]) summary[item.name] = { qty: 0, revenue: 0 };
-                summary[item.name].qty += item.qty;
-                summary[item.name].revenue += item.total;
+                summary[item.name].qty += (item.qty || 0);
+                summary[item.name].revenue += (item.total || 0);
             });
 
             let dIdx = 0;
@@ -1568,7 +1571,7 @@
             document.getElementById('dailyCost').innerText = `${totalCost} د.ج`;
             document.getElementById('dailyProfit').innerText = `${totalRevenue - totalCost} د.ج`;
 
-            let bonsHistory = getSafeStorageToday('bons_' + today);
+            let bonsHistory = normalizeBons(getSafeStorageToday('bons_' + today));
             let bonsContainer = document.getElementById('bonsHistoryList');
             if (!bonsContainer) return;
             bonsContainer.innerHTML = '';
@@ -1578,6 +1581,7 @@
             } else {
                 for (let i = bonsHistory.length - 1; i >= 0; i--) {
                     let bon = bonsHistory[i];
+                    if (!bon || !bon.items) continue;
                     let itemsDetail = bon.items.map(it => `${it.name} (${it.qty}×${it.price})`).join(' ، ');
                     
                     bonsContainer.innerHTML += `
@@ -1600,20 +1604,14 @@
             }
         }
 
-        /* --- دالة إغلاق اليومية المحدثة والشاملة لتنظيف الذاكرة المباشرة والاحتياطية --- */
+        /* --- إغلاق اليومية وإنهاء اليوم --- */
 
         function closeDay() {
             let salesHistory = getSafeStorageToday('sales_' + today);
-            let bonsHistory = getSafeStorageToday('bons_' + today);
-            
-            let archivedSales = getSafeJSON('archived_sales_' + today, []);
-            let archivedBons = getSafeJSON('archived_bons_' + today, []);
+            let bonsHistory = normalizeBons(getSafeStorageToday('bons_' + today));
 
-            let allSales = [...archivedSales, ...salesHistory];
-            let allBons = normalizeBons([...archivedBons, ...bonsHistory]);
-
-            if (allSales.length === 0 && allBons.length === 0) {
-                // إذا وجد مسح سابق ولكنه معلق بالذاكرة، قم بتفريغ الشاشة فوراً
+            if (salesHistory.length === 0 && bonsHistory.length === 0) {
+                // تنظيف الكاش كلياً
                 localStorage.removeItem('sales_' + today);
                 localStorage.removeItem('bons_' + today);
                 localStorage.removeItem('mirror_sales_' + today);
@@ -1623,7 +1621,7 @@
             }
 
             let totalRevenue = 0, totalCost = 0;
-            allSales.forEach(item => { 
+            salesHistory.forEach(item => { 
                 totalRevenue += (item.total || 0); 
                 totalCost += (((item.buyPrice !== undefined ? item.buyPrice : 0)) * item.qty); 
             });
@@ -1635,27 +1633,25 @@
                     revenue: totalRevenue, 
                     cost: totalCost, 
                     profit: netProfit, 
-                    totalBons: allBons.length, 
+                    totalBons: bonsHistory.length, 
                     closedAt: new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' }), 
-                    salesItems: allSales, 
-                    allBons: allBons 
+                    salesItems: salesHistory, 
+                    allBons: bonsHistory 
                 };
                 
-                // حفظ التقرير النهائي بذاكرة الأرشيف
                 localStorage.setItem('zreport_' + today, JSON.stringify(zReport));
-                localStorage.setItem('archived_sales_' + today, JSON.stringify(allSales));
-                localStorage.setItem('archived_bons_' + today, JSON.stringify(allBons));
+                localStorage.setItem('archived_sales_' + today, JSON.stringify(salesHistory));
+                localStorage.setItem('archived_bons_' + today, JSON.stringify(bonsHistory));
                 
-                // تفريغ كافة مفاتيح الذاكرة الرئيسية والاحتياطية لليوم لتفادي استرجاع البونات تلقائياً
+                // مسح كافة المفاتيح الرئيسية والاحتياطية
                 localStorage.removeItem('sales_' + today);
                 localStorage.removeItem('bons_' + today);
                 localStorage.removeItem('mirror_sales_' + today);
                 localStorage.removeItem('mirror_bons_' + today);
 
-                // إجبار الشاشة على إعادة التحديث وتفريغ القائمة
                 renderDailyReport();
                 loadHistoryDaysList();
-                alert('تم إغلاق اليومية بنجاح ونقل كافة البيانات للحفظ والأرشيف، وتفريغ الشاشة بالكامل!');
+                alert('تم إغلاق اليومية بنجاح ونقل البيانات للأرشيف وتصفير الشاشة بالكامل!');
             }
         }
 
@@ -2057,7 +2053,7 @@
                 bons = getSafeJSON('archived_bons_' + dateStr, getSafeStorageToday('bons_' + dateStr));
             }
             let bon = bons[bonIndex];
-            if (!bon) return alert('لم يتم العثور على البون');
+            if (!bon || !bon.items) return alert('لم يتم العثور على البون');
 
             let rows = '';
             let totalQty = 0;
@@ -2218,7 +2214,7 @@
             let bonsKey = source === 'today' ? ('bons_' + dateStr) : ('archived_bons_' + dateStr);
             let bonsHistory = source === 'today' ? getSafeStorageToday(bonsKey) : getSafeJSON(bonsKey, []);
             let bon = bonsHistory[index];
-            if (!bon) return alert('تعذر العثور على البون');
+            if (!bon || !bon.items) return alert('تعذر العثور على البون');
 
             editBonContext = { dateStr, index, source };
             editCart = bon.items.map(it => ({ ...it }));
@@ -2318,9 +2314,11 @@
             let oldBon = bonsHistory[index];
             if (!oldBon) { closeEditBonModal(); return alert('تعذر العثور على البون الأصلي'); }
 
-            oldBon.items.forEach(item => {
-                restoreStockSmart(item.name, item.qty);
-            });
+            if (oldBon.items && Array.isArray(oldBon.items)) {
+                oldBon.items.forEach(item => {
+                    restoreStockSmart(item.name, item.qty);
+                });
+            }
 
             editCart.forEach(item => {
                 deductStockWithUnboxing(item.name, item.qty);
@@ -2342,6 +2340,8 @@
                 profit: bonTotalProfit,
                 edited: true
             };
+
+            bonsHistory = normalizeBons(bonsHistory);
             
             if (isToday) {
                 setSafeStorageToday(bonsKey, bonsHistory);
@@ -2350,7 +2350,7 @@
             }
 
             let newSales = [];
-            bonsHistory.forEach(b => b.items.forEach(i => newSales.push(i)));
+            bonsHistory.forEach(b => { if (b.items) b.items.forEach(i => newSales.push(i)); });
             
             if (isToday) {
                 setSafeStorageToday(salesKey, newSales);
@@ -2391,7 +2391,7 @@
             let foundDates = new Set();
             for (let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
-                if (key && (key.includes('sales_') || key.includes('zreport_') || key.includes('bons_')) && !key.includes('mirror_')) {
+                if (key && (key.includes('sales_') || key.includes('zreport_') || key.includes('bons_')) && !key.includes('mirror_') && !key.includes('supply_')) {
                     let parts = key.split('_');
                     let dateStr = parts[parts.length - 1];
                     if (dateStr && dateStr.includes('-') && dateStr.length >= 8) foundDates.add(dateStr);
@@ -2489,6 +2489,7 @@
             } else {
                 for (let i = bonsHistory.length - 1; i >= 0; i--) {
                     let bon = bonsHistory[i];
+                    if (!bon || !bon.items) continue;
                     let itemsDetail = bon.items.map(it => `${it.name} (${it.qty}×${it.price})`).join(' ، ');
                     bonsHtml += `
                         <div class="bon-card">
@@ -2534,19 +2535,21 @@
             if (!targetBon) return;
 
             if (confirm(`هل أنت متأكد من حذف البون #${targetBon.id} من أرشيف ${dateStr}؟\n- سيتم إرجاع الكميات إلى الستوك.`)) {
-                targetBon.items.forEach(item => {
-                    restoreStockSmart(item.name, item.qty);
-                });
+                if (targetBon.items && Array.isArray(targetBon.items)) {
+                    targetBon.items.forEach(item => {
+                        restoreStockSmart(item.name, item.qty);
+                    });
+                }
                 localStorage.setItem('products', JSON.stringify(products));
 
                 bonsHistory.splice(bonIndex, 1);
                 bonsHistory = normalizeBons(bonsHistory);
 
                 let newSalesHistory = [];
-                bonsHistory.forEach(b => { b.items.forEach(i => { newSalesHistory.push(i); }); });
+                bonsHistory.forEach(b => { if (b.items) b.items.forEach(i => { newSalesHistory.push(i); }); });
 
                 localStorage.setItem(bonsKey, JSON.stringify(bonsHistory));
-                localStorage.setItem(salesKey, JSON.stringify(newSalesHistory));
+                localStorage.setItem('archived_sales_' + dateStr, JSON.stringify(newSalesHistory));
 
                 let totalRev = 0, totalCost = 0;
                 newSalesHistory.forEach(i => {
@@ -2593,11 +2596,11 @@
         }
 
         function exportToCSV() {
-            let bonsHistory = getSafeStorageToday('sales_' + today);
-            if (bonsHistory.length === 0) return alert('لا توجد مبيعات لتصديرها!');
-            let csvContent = "\uFEFF" + "Bon ID,Time,Item,Qty,Unit Price,Total\n";
-            bonsHistory.forEach(bon => {
-                bon.items.forEach(item => { csvContent += `${bon.id},${bon.time},"${item.name}",${item.qty},${item.price},${item.total}\n`; });
+            let salesHistory = getSafeStorageToday('sales_' + today);
+            if (salesHistory.length === 0) return alert('لا توجد مبيعات لتصديرها!');
+            let csvContent = "\uFEFF" + "Item,Qty,Price,Total\n";
+            salesHistory.forEach(item => {
+                csvContent += `"${item.name}",${item.qty},${item.price},${item.total}\n`;
             });
             let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             let url = URL.createObjectURL(blob);
