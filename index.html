@@ -991,24 +991,41 @@
             }
         });
 
-        /* --- وظائف بون المشتروات والبضاعة الجديدة المحدثة تضمن جلب كل الأيام --- */
+        /* --- وظائف بون المشتروات والبضاعة الجديدة المحدثة - تصحيح الفرز والتسلسل الأنيق --- */
 
         function getAllSupplyBonsCombined() {
             let allBons = [];
+            let dateKeys = [];
+            
             for (let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
                 if (key && key.startsWith('supply_bons_')) {
-                    let dateStr = key.replace('supply_bons_', '');
-                    let bons = getSafeJSON(key, []);
-                    bons.forEach(b => {
-                        allBons.push({
-                            ...b,
-                            date: b.date || dateStr,
-                            storageKey: key
-                        });
-                    });
+                    dateKeys.push(key);
                 }
             }
+
+            // ترتيب المفاتيح تصاعدياً بحسب التاريخ
+            dateKeys.sort();
+
+            let globalId = 1;
+            dateKeys.forEach(key => {
+                let dateStr = key.replace('supply_bons_', '');
+                let bons = getSafeJSON(key, []);
+                
+                // فرز بونات اليوم الواحد بالوقت
+                bons.sort((a, b) => parseTimeValue(a.time) - parseTimeValue(b.time));
+
+                bons.forEach(b => {
+                    allBons.push({
+                        ...b,
+                        displayId: globalId++, // ترقيم تسلسلي تصاعدي واضح
+                        date: b.date || dateStr,
+                        storageKey: key,
+                        timestamp: new Date((b.date || dateStr) + ' ' + (b.timeRaw || b.time || '00:00')).getTime() || 0
+                    });
+                });
+            });
+
             return allBons;
         }
 
@@ -1074,7 +1091,7 @@
             let totalCost = supplyCart.reduce((sum, i) => sum + i.totalCost, 0);
 
             supplyBons.push({
-                id: supplyBons.length + 1,
+                id: Date.now(), // معرّف فريد
                 date: today,
                 supplier: supplier,
                 time: time,
@@ -1095,10 +1112,10 @@
 
         function deleteSupplyBonGlobal(storageKey, bonId) {
             let supplyBons = getSafeJSON(storageKey, []);
-            let bonIndex = supplyBons.findIndex(b => b.id === bonId);
+            let bonIndex = supplyBons.findIndex(b => b.id === bonId || b.displayId === bonId);
             if (bonIndex === -1) return;
 
-            if (confirm(`حذف بون المشتروات #${bonId}؟\nتنبيه: لن تتخصم الكميات تلقائياً لتفادي أي لخطبة بالستوك.`)) {
+            if (confirm(`حذف بون المشتروات هذا؟\nتنبيه: لن تتخصم الكميات تلقائياً لتفادي أي لخبطة بالستوك.`)) {
                 supplyBons.splice(bonIndex, 1);
                 localStorage.setItem(storageKey, JSON.stringify(supplyBons));
                 renderSupplyBonsList();
@@ -1120,7 +1137,7 @@
 
         function showSupplyReceiptGlobal(storageKey, bonId) {
             let supplyBons = getSafeJSON(storageKey, []);
-            let bon = supplyBons.find(b => b.id === bonId);
+            let bon = supplyBons.find(b => b.id === bonId || b.displayId === bonId);
             if (!bon) return alert('لم يتم العثور على البون');
 
             let rows = '';
@@ -1141,7 +1158,7 @@
                 <div class="receipt-sub">إيصال بون مشتروات وبضاعة</div>
 
                 <div class="receipt-meta">
-                    <span>رقم البون: <b>#${bon.id}</b></span>
+                    <span>رقم البون: <b>#${bon.displayId || 1}</b></span>
                     <span>${bon.date || today} &nbsp;|&nbsp; ${bon.time}</span>
                 </div>
 
@@ -1176,8 +1193,8 @@
 
             container.innerHTML = allSupplyBons.length === 0 ? `<p style="text-align:center; color:#888;">لا توجد بونات مشتريات مسجلة بعد</p>` : '';
 
-            // ترتيب بونات المشتريات من الأحدث إلى الأقدم
-            allSupplyBons.reverse().forEach((bon, displayIdx) => {
+            // العرض: ترتيب أحدث البونات في الأعلى دائماً
+            allSupplyBons.slice().reverse().forEach((bon, displayIdx) => {
                 let tableRows = '';
                 bon.items.forEach((item, idx) => {
                     tableRows += `<tr>
@@ -1193,7 +1210,7 @@
                     <div class="supply-bon-card">
                         <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleSupplyAccordion(${displayIdx}, this)">
                             <div style="display:flex; flex-direction:column; gap:2px;">
-                                <span style="font-weight:bold; color:var(--accent-green);">🚚 بون توريد #${bon.id} <small style="color:var(--text-main);">[${bon.supplier}] - 📅 ${bon.date} (${bon.time})</small></span>
+                                <span style="font-weight:bold; color:var(--accent-green);">🚚 بون توريد #${bon.displayId} <small style="color:var(--text-main);">[${bon.supplier}] - 📅 ${bon.date} (${bon.time})</small></span>
                                 <span style="font-size:13px; color:var(--accent-green); font-weight:bold;">التكلفة: ${bon.totalCost} د.ج</span>
                             </div>
                             <div style="display:flex; gap:6px; align-items:center;">
