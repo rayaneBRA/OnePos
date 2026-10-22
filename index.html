@@ -1572,23 +1572,48 @@
         function closeDay() {
             let salesHistory = getSafeStorageToday('sales_' + today);
             let bonsHistory = getSafeStorageToday('bons_' + today);
-            if (salesHistory.length === 0 && bonsHistory.length === 0) return alert('لا توجد مبيعات لإغلاقها!');
+            
+            // محاولة جلب الأرشيف السابق إن وجد لإضافة السجل عليه
+            let archivedSales = getSafeJSON('archived_sales_' + today, []);
+            let archivedBons = getSafeJSON('archived_bons_' + today, []);
+
+            let allSales = [...archivedSales, ...salesHistory];
+            let allBons = normalizeBons([...archivedBons, ...bonsHistory]);
+
+            if (allSales.length === 0 && allBons.length === 0) return alert('لا توجد مبيعات لإغلاقها!');
 
             let totalRevenue = 0, totalCost = 0;
-            salesHistory.forEach(item => { totalRevenue += item.total; totalCost += ((item.buyPrice || 0) * item.qty); });
+            allSales.forEach(item => { 
+                totalRevenue += (item.total || 0); 
+                totalCost += (((item.buyPrice !== undefined ? item.buyPrice : 0)) * item.qty); 
+            });
             let netProfit = totalRevenue - totalCost;
 
             if (confirm(`إغلاق يومية (${today})؟\nالمبيعات: ${totalRevenue} د.ج\nصافي الربح: ${netProfit} د.ج`)) {
-                let zReport = { date: today, revenue: totalRevenue, cost: totalCost, profit: netProfit, totalBons: bonsHistory.length, closedAt: new Date().toLocaleTimeString('ar-DZ'), salesItems: salesHistory, allBons: bonsHistory };
+                let zReport = { 
+                    date: today, 
+                    revenue: totalRevenue, 
+                    cost: totalCost, 
+                    profit: netProfit, 
+                    totalBons: allBons.length, 
+                    closedAt: new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' }), 
+                    salesItems: allSales, 
+                    allBons: allBons 
+                };
+                
                 localStorage.setItem('zreport_' + today, JSON.stringify(zReport));
-                localStorage.setItem('archived_sales_' + today, JSON.stringify(salesHistory));
-                localStorage.setItem('archived_bons_' + today, JSON.stringify(bonsHistory));
+                localStorage.setItem('archived_sales_' + today, JSON.stringify(allSales));
+                localStorage.setItem('archived_bons_' + today, JSON.stringify(allBons));
+                
+                // تفريغ السجلات النشطة للليومية الحالية
                 localStorage.removeItem('sales_' + today);
                 localStorage.removeItem('bons_' + today);
                 localStorage.removeItem('mirror_sales_' + today);
                 localStorage.removeItem('mirror_bons_' + today);
+
                 renderDailyReport();
-                alert('تم إغلاق اليومية بنجاح ونقلها للأرشيف.');
+                loadHistoryDaysList();
+                alert('تم إغلاق اليومية بنجاح ونقل كافة البيانات والحسابات للأرشيف النهائي!');
             }
         }
 
