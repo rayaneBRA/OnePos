@@ -694,90 +694,18 @@
             }
         }
 
+        // تم إلغاء الاسترجاع التلقائي من الميرور نهائياً لتفادي استرجاع البونات المحذوفة
         function getSafeStorageToday(key) {
-            let data = getSafeJSON(key, null);
-            if (!data || !Array.isArray(data) || data.length === 0) {
-                // إذا كان مفتاح اليوم ممسوحاً أو فارغاً، لا ترجع النسخة الاحتياطية لتفادي الاسترجاع التلقائي
-                return [];
-            }
-            // فلترة أي عنصر فارغ أو مكسور
-            return data.filter(item => item && typeof item === 'object' && Object.keys(item).length > 0);
+            let data = getSafeJSON(key, []);
+            if (!Array.isArray(data)) return [];
+            return data.filter(item => item && typeof item === 'object' && Object.keys(item).length > 0 && Array.isArray(item.items) && item.items.length > 0);
         }
 
         function setSafeStorageToday(key, value) {
             try {
-                let cleanData = Array.isArray(value) ? value.filter(item => item && typeof item === 'object' && Object.keys(item).length > 0) : value;
+                let cleanData = Array.isArray(value) ? value.filter(item => item && typeof item === 'object' && Object.keys(item).length > 0 && Array.isArray(item.items) && item.items.length > 0) : value;
                 localStorage.setItem(key, JSON.stringify(cleanData));
-                return true;
-            } catch(e) {
-                alert('⚠️ فشل الحفظ! ذاكرة المتصفح ممتلئة أو غير متاحة. خذ نسخة احتياطية من الإعدادات وامسح أيام قديمة.');
-                return false;
-            }
-        }
-
-        // تنظيف النسخ المكررة (mirror) القديمة لتحرير مساحة التخزين
-        (function cleanOldMirrors() {
-            try {
-                let toRemove = [];
-                for (let i = 0; i < localStorage.length; i++) {
-                    let k = localStorage.key(i);
-                    if (k && k.startsWith('mirror_')) toRemove.push(k);
-                }
-                toRemove.forEach(k => localStorage.removeItem(k));
             } catch(e) {}
-        })();
-
-        // تاريخ اليوم حسب توقيت الجهاز المحلي (وليس UTC)
-        function localDateStr(d) {
-            d = d || new Date();
-            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-        }
-
-        // دمج مبيعات/بونات يوم مع الأرشيف الموجود (بدون استبدال) وإعادة حساب تقرير Z
-        function archiveDayMerge(dateStr, salesNew, bonsNew, closedAtLabel) {
-            let prevSales = getSafeJSON('archived_sales_' + dateStr, []);
-            let prevBons = getSafeJSON('archived_bons_' + dateStr, []);
-            if (!Array.isArray(prevSales)) prevSales = [];
-            if (!Array.isArray(prevBons)) prevBons = [];
-
-            let allSales = prevSales.concat(salesNew);
-            let allBons = normalizeBons(prevBons.concat(bonsNew));
-
-            let totalRevenue = 0, totalCost = 0;
-            allSales.forEach(item => {
-                totalRevenue += (item.total || 0);
-                totalCost += ((item.buyPrice || 0) * (item.qty || 0));
-            });
-
-            let zReport = {
-                date: dateStr,
-                revenue: totalRevenue,
-                cost: totalCost,
-                profit: totalRevenue - totalCost,
-                totalBons: allBons.length,
-                closedAt: closedAtLabel,
-                salesItems: allSales,
-                allBons: allBons
-            };
-
-            let backup = {
-                z: localStorage.getItem('zreport_' + dateStr),
-                s: localStorage.getItem('archived_sales_' + dateStr),
-                b: localStorage.getItem('archived_bons_' + dateStr)
-            };
-            try {
-                localStorage.setItem('archived_sales_' + dateStr, JSON.stringify(allSales));
-                localStorage.setItem('archived_bons_' + dateStr, JSON.stringify(allBons));
-                localStorage.setItem('zreport_' + dateStr, JSON.stringify(zReport));
-                return zReport;
-            } catch (e) {
-                // تراجع كامل: لا نترك أرشيفاً نصف مكتوب
-                ['zreport_', 'archived_sales_', 'archived_bons_'].forEach((p, i) => {
-                    let v = [backup.z, backup.s, backup.b][i];
-                    try { v === null ? localStorage.removeItem(p + dateStr) : localStorage.setItem(p + dateStr, v); } catch(_) {}
-                });
-                return null;
-            }
         }
 
         let products = getSafeJSON('products', {});
@@ -788,7 +716,7 @@
         let debtCart = [];
         let calcItems = [];
         let histBonTemp = [];
-        let today = localDateStr();
+        let today = new Date().toISOString().split('T')[0];
         let currentSelectedHistoryDate = null;
 
         let currentDateEl = document.getElementById('currentDate');
@@ -819,7 +747,7 @@
             let pastUnclosedDates = new Set();
             for (let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
-                if (key && (key.startsWith('sales_') || key.startsWith('bons_'))) {
+                if (key && (key.startsWith('sales_') || key.startsWith('bons_')) && !key.startsWith('mirror_') && !key.startsWith('archived_')) {
                     let dateStr = key.replace('sales_', '').replace('bons_', '');
                     if (dateStr && dateStr < today && dateStr.length >= 8) {
                         pastUnclosedDates.add(dateStr);
@@ -830,34 +758,43 @@
             pastUnclosedDates.forEach(pastDate => {
                 let salesHistory = getSafeJSON('sales_' + pastDate, []);
                 let bonsHistory = getSafeJSON('bons_' + pastDate, []);
-                if (!Array.isArray(salesHistory)) salesHistory = [];
-                if (!Array.isArray(bonsHistory)) bonsHistory = [];
 
                 if (salesHistory.length > 0 || bonsHistory.length > 0) {
-                    let ok = archiveDayMerge(pastDate, salesHistory, bonsHistory, 'تلقائي (حماية الاستئناف)');
-                    if (!ok) return; // فشل الأرشفة: نبقي بيانات اليوم كما هي ولا نمسحها
+                    let totalRevenue = 0, totalCost = 0;
+                    salesHistory.forEach(item => {
+                        totalRevenue += item.total || 0;
+                        totalCost += ((item.buyPrice || 0) * item.qty);
+                    });
+                    let netProfit = totalRevenue - totalCost;
+
+                    let zReport = {
+                        date: pastDate,
+                        revenue: totalRevenue,
+                        cost: totalCost,
+                        profit: netProfit,
+                        totalBons: bonsHistory.length,
+                        closedAt: 'تلقائي (حماية الاستئناف)',
+                        salesItems: salesHistory,
+                        allBons: bonsHistory
+                    };
+
+                    localStorage.setItem('zreport_' + pastDate, JSON.stringify(zReport));
+                    localStorage.setItem('archived_sales_' + pastDate, JSON.stringify(salesHistory));
+                    localStorage.setItem('archived_bons_' + pastDate, JSON.stringify(bonsHistory));
                 }
 
                 localStorage.removeItem('sales_' + pastDate);
                 localStorage.removeItem('bons_' + pastDate);
+                localStorage.removeItem('mirror_sales_' + pastDate);
+                localStorage.removeItem('mirror_bons_' + pastDate);
             });
-        }
-
-        function ensureToday() {
-            let now = localDateStr();
-            if (now !== today) {
-                today = now;
-                let el = document.getElementById('currentDate');
-                if (el) el.innerText = today;
-                autoClosePastDays();
-            }
         }
 
         autoClosePastDays();
 
         function parseTimeValue(timeStr) {
             if (!timeStr) return 0;
-            let str = timeStr.toString().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+            let str = timeStr.toString().replace(/[٠-٩]/g, d => '٠١٢٣٥٦٧٨٩'.indexOf(d));
             let isPM = str.includes('م');
             let isAM = str.includes('ص');
             let match = str.match(/(\d+):(\d+)/);
@@ -869,7 +806,7 @@
             return h * 60 + m;
         }
 
-        // ترقيم المجموعات اليومية بشكل سليم من 1 متصاعداً وتصفية أي عناصر فارغة
+        // ترقيم وصيانة البونات وترتيبها تبدأ من 1 دائماً
         function normalizeBons(bonsArray) {
             if (!Array.isArray(bonsArray)) return [];
             let validBons = bonsArray.filter(b => b && typeof b === 'object' && Array.isArray(b.items) && b.items.length > 0);
@@ -923,7 +860,6 @@
         });
 
         function syncAndRefreshAll() {
-            ensureToday();
             products = getSafeJSON('products', {});
             renderDailyReport();
             updateProductViews();
@@ -1547,7 +1483,6 @@
 
         function checkout() {
             if (cart.length === 0) return alert('الفاتورة فارغة!');
-            ensureToday();
             let salesHistory = getSafeStorageToday('sales_' + today);
             let bonsHistory = getSafeStorageToday('bons_' + today);
 
@@ -1608,7 +1543,6 @@
         }
 
         function renderDailyReport() {
-            ensureToday();
             let salesHistory = getSafeStorageToday('sales_' + today);
             let tbody = document.querySelector('#dailyTable tbody');
             if (!tbody) return;
@@ -1666,41 +1600,57 @@
             }
         }
 
-        /* --- إغلاق اليومية وإنهاء اليوم --- */
+        /* --- إغلاق اليومية وإنهاء اليوم المحدث الشامل --- */
 
         function closeDay() {
-            ensureToday();
             let salesHistory = getSafeStorageToday('sales_' + today);
             let bonsHistory = normalizeBons(getSafeStorageToday('bons_' + today));
 
             if (salesHistory.length === 0 && bonsHistory.length === 0) {
-                localStorage.removeItem('sales_' + today);
-                localStorage.removeItem('bons_' + today);
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                    let key = localStorage.key(i);
+                    if (key && key.includes(today) && !key.includes('supply_')) {
+                        localStorage.removeItem(key);
+                    }
+                }
                 renderDailyReport();
-                return alert('لا توجد مبيعات جديدة لإغلاقها. (اليومية فارغة)');
+                return alert('اليومية مغلقة ومفرغة بالفعل!');
             }
 
             let totalRevenue = 0, totalCost = 0;
-            salesHistory.forEach(item => {
-                totalRevenue += (item.total || 0);
-                totalCost += ((item.buyPrice || 0) * (item.qty || 0));
+            salesHistory.forEach(item => { 
+                totalRevenue += (item.total || 0); 
+                totalCost += (((item.buyPrice !== undefined ? item.buyPrice : 0)) * item.qty); 
             });
             let netProfit = totalRevenue - totalCost;
 
             if (confirm(`إغلاق يومية (${today})؟\nالمبيعات: ${totalRevenue} د.ج\nصافي الربح: ${netProfit} د.ج`)) {
-                let closedAt = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
-                let ok = archiveDayMerge(today, salesHistory, bonsHistory, closedAt);
-                if (!ok) {
-                    return alert('⚠️ فشل نقل اليومية للأرشيف (الذاكرة ممتلئة؟). لم يتم مسح أي شيء، بياناتك ما زالت سليمة.');
+                let zReport = { 
+                    date: today, 
+                    revenue: totalRevenue, 
+                    cost: totalCost, 
+                    profit: netProfit, 
+                    totalBons: bonsHistory.length, 
+                    closedAt: new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' }), 
+                    salesItems: salesHistory, 
+                    allBons: bonsHistory 
+                };
+                
+                localStorage.setItem('zreport_' + today, JSON.stringify(zReport));
+                localStorage.setItem('archived_sales_' + today, JSON.stringify(salesHistory));
+                localStorage.setItem('archived_bons_' + today, JSON.stringify(bonsHistory));
+                
+                // مسح كل المفاتيح المرتبطة باليوم لتجنب عودتها
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                    let key = localStorage.key(i);
+                    if (key && key.includes(today) && !key.includes('archived_') && !key.includes('zreport_') && !key.includes('supply_')) {
+                        localStorage.removeItem(key);
+                    }
                 }
-
-                // المسح فقط بعد نجاح الأرشفة
-                localStorage.removeItem('sales_' + today);
-                localStorage.removeItem('bons_' + today);
 
                 renderDailyReport();
                 loadHistoryDaysList();
-                alert('تم إغلاق اليومية بنجاح ونقل البيانات للأرشيف وتصفير الشاشة بالكامل!');
+                alert('تم إغلاق اليومية بنجاح ونقل كافة البيانات للأرشيف وتصفير الشاشة بالكامل!');
             }
         }
 
@@ -1937,7 +1887,6 @@
                 `اضغط [إلغاء / Cancel] لحفظ المعاملة باليومية وبالمبيعات فقط دون الخصم من الستوك.`
             );
 
-            ensureToday();
             let salesHistory = getSafeStorageToday('sales_' + today);
             let bonsHistory = getSafeStorageToday('bons_' + today);
             let time = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
@@ -2036,4 +1985,634 @@
                 let unitCost = products[item.name] ? products[item.name].buy : 0;
                 let lineCost = unitCost * item.qty;
                 totalCost += lineCost;
-                tbody.innerHTML += `<tr><td class="num-col">${index + 1}</td><td><b>${item.name}</b></td><td><span class="badge" style="background:#f59e0b; color:#000;">${item.qty}</span></td><td>${lineCost} د.ج</td><td><button class="btn-sm btn-delete" onclick="checkListItems.splice(${index},1); localStorage.setItem('checkListItems', JSON.stringify(checkListItems)); renderCheckListUI();">X</button></td></t
+                tbody.innerHTML += `<tr><td class="num-col">${index + 1}</td><td><b>${item.name}</b></td><td><span class="badge" style="background:#f59e0b; color:#000;">${item.qty}</span></td><td>${lineCost} د.ج</td><td><button class="btn-sm btn-delete" onclick="checkListItems.splice(${index},1); localStorage.setItem('checkListItems', JSON.stringify(checkListItems)); renderCheckListUI();">X</button></td></tr>`;
+            });
+            document.getElementById('checkListTotalCost').innerText = `${totalCost} د.ج`;
+        }
+
+        function clearCheckList() {
+            checkListItems = [];
+            localStorage.setItem('checkListItems', JSON.stringify(checkListItems));
+            renderCheckListUI();
+        }
+
+        function addToCalc() {
+            let name = document.getElementById('calcProductSearch').value.trim();
+            let qty = parseInt(document.getElementById('calcQty').value);
+            let buyPrice = parseFloat(document.getElementById('calcBuyPrice').value);
+            let sellPrice = parseFloat(document.getElementById('calcSellPrice').value);
+
+            if (!name || isNaN(qty) || qty <= 0) return;
+            if (isNaN(buyPrice) && products[name]) buyPrice = products[name].buy;
+            if (isNaN(sellPrice) && products[name]) sellPrice = products[name].sell;
+
+            let exC = calcItems.find(i => i.name.trim().toLowerCase() === name.toLowerCase() && i.buyPrice === buyPrice && i.sellPrice === sellPrice);
+            if (exC) {
+                exC.qty += qty;
+                exC.totalBuy = exC.qty * exC.buyPrice;
+                exC.totalSell = exC.qty * exC.sellPrice;
+            } else {
+                calcItems.push({ name, qty, buyPrice, sellPrice, totalBuy: qty * buyPrice, totalSell: qty * sellPrice });
+            }
+
+            document.getElementById('calcProductSearch').value = '';
+            document.getElementById('calcQty').value = '1';
+            document.getElementById('calcBuyPrice').value = '';
+            document.getElementById('calcSellPrice').value = '';
+            let sugg = document.getElementById('calcSuggestions');
+            if (sugg) sugg.style.display = 'none';
+
+            renderCalcUI();
+        }
+
+        function renderCalcUI() {
+            let tbody = document.querySelector('#calcTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let totalBuy = 0, totalSell = 0;
+            calcItems.forEach((item, index) => {
+                totalBuy += item.totalBuy;
+                totalSell += item.totalSell;
+                tbody.innerHTML += `<tr><td class="num-col">${index + 1}</td><td>${item.name}</td><td><b>${item.qty}</b></td><td>${item.buyPrice}</td><td class="privacy-hide">${item.sellPrice}</td><td class="privacy-hide">${item.totalSell}</td><td><button class="btn-sm btn-delete" onclick="calcItems.splice(${index},1);renderCalcUI();">X</button></td></tr>`;
+            });
+            document.getElementById('calcTotalBuy').innerText = `${totalBuy} د.ج`;
+            document.getElementById('calcTotalSell').innerText = `${totalSell} د.ج`;
+            document.getElementById('calcTotalProfit').innerText = `${totalSell - totalBuy} د.ج`;
+        }
+
+        function clearCalc() { calcItems = []; renderCalcUI(); }
+
+        function showReceipt(dateStr, bonIndex, source) {
+            let bons;
+            if (source === 'today') {
+                bons = getSafeStorageToday('bons_' + dateStr);
+            } else if (source === 'archive') {
+                bons = getSafeJSON('archived_bons_' + dateStr, []);
+            } else {
+                bons = getSafeJSON('archived_bons_' + dateStr, getSafeStorageToday('bons_' + dateStr));
+            }
+            let bon = bons[bonIndex];
+            if (!bon || !bon.items) return alert('لم يتم العثور على البون');
+
+            let rows = '';
+            let totalQty = 0;
+            bon.items.forEach((it, idx) => {
+                totalQty += it.qty;
+                rows += `<tr>
+                    <td>${idx + 1}</td>
+                    <td class="r-name">${it.name}</td>
+                    <td>${it.qty}</td>
+                    <td>${it.price}</td>
+                    <td><b>${it.total}</b></td>
+                </tr>`;
+            });
+
+            let timeClean = String(bon.time || '').replace('(مضاف يدوياً)', '').trim();
+
+            document.getElementById('receiptPaper').innerHTML = `
+                <div class="receipt-brand">ONE<span>POS</span></div>
+                <div class="receipt-sub">إيصال معاملة</div>
+
+                <div class="receipt-meta">
+                    <span>رقم الإيصال: <b>#${bon.id}</b></span>
+                    <span>${dateStr} &nbsp;|&nbsp; ${timeClean}</span>
+                </div>
+
+                <hr class="receipt-divider">
+
+                <table class="receipt-table">
+                    <thead><tr><th>#</th><th style="text-align:right;">السلعة</th><th>الكمية</th><th>السعر</th><th>المجموع</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+
+                <hr class="receipt-divider">
+
+                <div style="display:flex; justify-content:space-between; font-size:12px; color:#6b7280; margin-bottom:8px;">
+                    <span>عدد السلع: ${bon.items.length}</span>
+                    <span>إجمالي الوحدات: ${totalQty}</span>
+                </div>
+                <div class="receipt-total"><span>الإجمالي</span><span class="amt">${bon.total} د.ج</span></div>
+
+                <div class="receipt-thanks">شكراً لتعاملكم معنا 🌟<small>نتمنى لكم يوماً سعيداً</small></div>
+
+                <button class="receipt-close" onclick="closeReceipt()">إغلاق</button>`;
+            document.getElementById('receiptModal').style.display = 'flex';
+        }
+
+        function closeReceipt() { document.getElementById('receiptModal').style.display = 'none'; }
+        function closeReceiptOutside(e) { if (e.target.id === 'receiptModal') closeReceipt(); }
+
+        let quickCart = [];
+
+        function openQuickBonModal() {
+            quickCart = [];
+            renderQuickCartUI();
+            document.getElementById('quickBonModal').style.display = 'flex';
+        }
+
+        function closeQuickBonModal() { document.getElementById('quickBonModal').style.display = 'none'; }
+        function closeQuickBonModalOutside(e) { if (e.target.id === 'quickBonModal') closeQuickBonModal(); }
+
+        function addToQuickCart() {
+            let name = document.getElementById('quickProductSearch').value.trim();
+            let qty = parseInt(document.getElementById('quickQty').value);
+            let priceInput = document.getElementById('quickPrice').value;
+
+            if (!name || !products[name]) return alert('السلعة غير موجودة بالستوك');
+            if (isNaN(qty) || qty <= 0) return alert('كمية غير صالحة');
+
+            let price = parseFloat(priceInput);
+            if (isNaN(price)) price = products[name].sell;
+
+            let existingIndex = quickCart.findIndex(item => item.name === name);
+            let buyPrice = products[name].buy;
+            if (existingIndex > -1) {
+                quickCart[existingIndex].qty += qty;
+                quickCart[existingIndex].price = price;
+                quickCart[existingIndex].total = quickCart[existingIndex].qty * price;
+                quickCart[existingIndex].totalCost = quickCart[existingIndex].qty * buyPrice;
+                quickCart[existingIndex].profit = quickCart[existingIndex].total - quickCart[existingIndex].totalCost;
+            } else {
+                let total = qty * price;
+                let totalCost = qty * buyPrice;
+                quickCart.push({ name, qty, price, buyPrice, totalCost, total, profit: total - totalCost });
+            }
+
+            document.getElementById('quickProductSearch').value = '';
+            document.getElementById('quickQty').value = '1';
+            document.getElementById('quickPrice').value = '';
+            let sugg = document.getElementById('quickSuggestions');
+            if (sugg) sugg.style.display = 'none';
+            renderQuickCartUI();
+        }
+
+        function renderQuickCartUI() {
+            let tbody = document.querySelector('#quickCartTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let total = 0, totalBuy = 0, totalProfit = 0;
+            quickCart.forEach((item, index) => {
+                total += item.total;
+                totalBuy += item.totalCost;
+                totalProfit += item.profit;
+                tbody.innerHTML += `<tr>
+                    <td class="num-col">${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td>${item.qty}</td>
+                    <td>${item.totalCost}</td>
+                    <td class="privacy-hide">${item.price}</td>
+                    <td class="privacy-hide"><b>${item.total}</b></td>
+                    <td class="privacy-hide" style="color:var(--accent-green); font-weight:bold;">${item.profit}</td>
+                    <td><button class="btn-sm btn-delete" onclick="quickCart.splice(${index},1);renderQuickCartUI();">X</button></td>
+                </tr>`;
+            });
+            document.getElementById('quickCartTotalBuy').innerText = `${totalBuy} د.ج`;
+            document.getElementById('quickCartTotal').innerText = `${total} د.ج`;
+            document.getElementById('quickCartTotalProfit').innerText = `${totalProfit} د.ج`;
+        }
+
+        function checkoutQuickBon() {
+            if (quickCart.length === 0) return alert('البون السريع فارغ!');
+
+            let salesHistory = getSafeStorageToday('sales_' + today);
+            let bonsHistory = getSafeStorageToday('bons_' + today);
+            let time = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+
+            let bonTotalCost = 0, bonTotalSell = 0, bonTotalProfit = 0;
+            quickCart.forEach(item => {
+                bonTotalCost += item.totalCost;
+                bonTotalSell += item.total;
+                bonTotalProfit += item.profit;
+            });
+
+            let currentBon = { id: 0, time: time, items: [...quickCart], total: bonTotalSell, totalCost: bonTotalCost, profit: bonTotalProfit, quick: true };
+
+            quickCart.forEach(item => {
+                deductStockWithUnboxing(item.name, item.qty);
+                salesHistory.push(item);
+            });
+
+            bonsHistory.push(currentBon);
+            bonsHistory = normalizeBons(bonsHistory);
+
+            localStorage.setItem('products', JSON.stringify(products));
+            setSafeStorageToday('sales_' + today, salesHistory);
+            setSafeStorageToday('bons_' + today, bonsHistory);
+
+            quickCart = [];
+            renderQuickCartUI();
+            updateProductViews();
+            renderDailyReport();
+            closeQuickBonModal();
+        }
+
+        let editCart = [];
+        let editBonContext = null;
+
+        function openEditBonModal(dateStr, index, source) {
+            let bonsKey = source === 'today' ? ('bons_' + dateStr) : ('archived_bons_' + dateStr);
+            let bonsHistory = source === 'today' ? getSafeStorageToday(bonsKey) : getSafeJSON(bonsKey, []);
+            let bon = bonsHistory[index];
+            if (!bon || !bon.items) return alert('تعذر العثور على البون');
+
+            editBonContext = { dateStr, index, source };
+            editCart = bon.items.map(it => ({ ...it }));
+
+            document.getElementById('editBonLabel').innerText = `#${bon.id} - ${dateStr}`;
+            renderEditCartUI();
+            document.getElementById('editBonModal').style.display = 'flex';
+        }
+
+        function closeEditBonModal() {
+            editBonContext = null;
+            editCart = [];
+            document.getElementById('editBonModal').style.display = 'none';
+        }
+        function closeEditBonModalOutside(e) { if (e.target.id === 'editBonModal') closeEditBonModal(); }
+
+        function addToEditCart() {
+            let name = document.getElementById('editProductSearch').value.trim();
+            let qty = parseInt(document.getElementById('editQty').value);
+            let priceInput = document.getElementById('editPrice').value;
+
+            if (!name || !products[name]) return alert('السلعة غير موجودة بالستوك');
+            if (isNaN(qty) || qty <= 0) return alert('كمية غير صالحة');
+
+            let price = parseFloat(priceInput);
+            if (isNaN(price)) price = products[name].sell;
+
+            let existingIndex = editCart.findIndex(item => item.name === name);
+            let buyPrice = products[name].buy;
+            if (existingIndex > -1) {
+                editCart[existingIndex].qty += qty;
+                editCart[existingIndex].price = price;
+                editCart[existingIndex].total = editCart[existingIndex].qty * price;
+                editCart[existingIndex].totalCost = editCart[existingIndex].qty * buyPrice;
+                editCart[existingIndex].profit = editCart[existingIndex].total - editCart[existingIndex].totalCost;
+            } else {
+                let total = qty * price;
+                let totalCost = qty * buyPrice;
+                editCart.push({ name, qty, price, buyPrice, totalCost, total, profit: total - totalCost });
+            }
+
+            document.getElementById('editProductSearch').value = '';
+            document.getElementById('editQty').value = '1';
+            document.getElementById('editPrice').value = '';
+            let sugg = document.getElementById('editSuggestions');
+            if (sugg) sugg.style.display = 'none';
+            renderEditCartUI();
+        }
+
+        function updateEditCartQty(index, newQty) {
+            newQty = parseInt(newQty);
+            if (isNaN(newQty) || newQty <= 0) return;
+            editCart[index].qty = newQty;
+            editCart[index].totalCost = newQty * editCart[index].buyPrice;
+            editCart[index].total = newQty * editCart[index].price;
+            editCart[index].profit = editCart[index].total - editCart[index].totalCost;
+            renderEditCartUI();
+        }
+
+        function renderEditCartUI() {
+            let tbody = document.querySelector('#editCartTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            let total = 0, totalBuy = 0, totalProfit = 0;
+            editCart.forEach((item, index) => {
+                total += item.total;
+                totalBuy += item.totalCost;
+                totalProfit += item.profit;
+                tbody.innerHTML += `<tr>
+                    <td class="num-col">${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td><input type="number" class="qty-input" value="${item.qty}" min="1" onchange="updateEditCartQty(${index}, this.value)"></td>
+                    <td>${item.totalCost}</td>
+                    <td class="privacy-hide">${item.price}</td>
+                    <td class="privacy-hide"><b>${item.total}</b></td>
+                    <td class="privacy-hide" style="color:var(--accent-green); font-weight:bold;">${item.profit}</td>
+                    <td><button class="btn-sm btn-delete" onclick="editCart.splice(${index},1);renderEditCartUI();">X</button></td>
+                </tr>`;
+            });
+            document.getElementById('editCartTotalBuy').innerText = `${totalBuy} د.ج`;
+            document.getElementById('editCartTotal').innerText = `${total} د.ج`;
+            document.getElementById('editCartTotalProfit').innerText = `${totalProfit} د.ج`;
+        }
+
+        function saveEditedBon() {
+            if (!editBonContext) return;
+            if (editCart.length === 0) {
+                return alert('لا يمكن حفظ بون فارغ! لحذف البون كاملاً استخدم زر "حذف" بدلاً من ذلك.');
+            }
+
+            let { dateStr, index, source } = editBonContext;
+            let isToday = source === 'today';
+            let bonsKey = isToday ? ('bons_' + dateStr) : ('archived_bons_' + dateStr);
+            let salesKey = isToday ? ('sales_' + dateStr) : ('archived_sales_' + dateStr);
+
+            let bonsHistory = isToday ? getSafeStorageToday(bonsKey) : getSafeJSON(bonsKey, []);
+            let oldBon = bonsHistory[index];
+            if (!oldBon) { closeEditBonModal(); return alert('تعذر العثور على البون الأصلي'); }
+
+            if (oldBon.items && Array.isArray(oldBon.items)) {
+                oldBon.items.forEach(item => {
+                    restoreStockSmart(item.name, item.qty);
+                });
+            }
+
+            editCart.forEach(item => {
+                deductStockWithUnboxing(item.name, item.qty);
+            });
+            localStorage.setItem('products', JSON.stringify(products));
+
+            let bonTotalCost = 0, bonTotalSell = 0, bonTotalProfit = 0;
+            editCart.forEach(item => {
+                bonTotalCost += item.totalCost;
+                bonTotalSell += item.total;
+                bonTotalProfit += item.profit;
+            });
+
+            bonsHistory[index] = {
+                ...oldBon,
+                items: [...editCart],
+                total: bonTotalSell,
+                totalCost: bonTotalCost,
+                profit: bonTotalProfit,
+                edited: true
+            };
+
+            bonsHistory = normalizeBons(bonsHistory);
+            
+            if (isToday) {
+                setSafeStorageToday(bonsKey, bonsHistory);
+            } else {
+                localStorage.setItem(bonsKey, JSON.stringify(bonsHistory));
+            }
+
+            let newSales = [];
+            bonsHistory.forEach(b => { if (b.items) b.items.forEach(i => newSales.push(i)); });
+            
+            if (isToday) {
+                setSafeStorageToday(salesKey, newSales);
+            } else {
+                localStorage.setItem(salesKey, JSON.stringify(newSales));
+            }
+
+            if (!isToday) {
+                let totalRev = 0, totalCost = 0;
+                newSales.forEach(i => { totalRev += i.total; totalCost += ((i.buyPrice || 0) * i.qty); });
+                let zReport = getSafeJSON('zreport_' + dateStr, {});
+                zReport.date = dateStr;
+                zReport.revenue = totalRev;
+                zReport.cost = totalCost;
+                zReport.profit = totalRev - totalCost;
+                zReport.totalBons = bonsHistory.length;
+                zReport.salesItems = newSales;
+                zReport.allBons = bonsHistory;
+                localStorage.setItem('zreport_' + dateStr, JSON.stringify(zReport));
+            }
+
+            closeEditBonModal();
+            updateProductViews();
+
+            if (isToday) {
+                renderDailyReport();
+            } else {
+                let detailsDiv = document.getElementById('history_details_' + dateStr);
+                if (detailsDiv) populateHistoryDayContent(dateStr, detailsDiv);
+                loadHistoryDaysList();
+            }
+        }
+
+        function loadHistoryDaysList() {
+            let container = document.getElementById('historyDaysContainer');
+            if (!container) return;
+            container.innerHTML = '';
+            let foundDates = new Set();
+            for (let i = 0; i < localStorage.length; i++) {
+                let key = localStorage.key(i);
+                if (key && (key.includes('sales_') || key.includes('zreport_') || key.includes('bons_')) && !key.includes('mirror_') && !key.includes('supply_')) {
+                    let parts = key.split('_');
+                    let dateStr = parts[parts.length - 1];
+                    if (dateStr && dateStr.includes('-') && dateStr.length >= 8) foundDates.add(dateStr);
+                }
+            }
+            let sortedDates = Array.from(foundDates).sort().reverse();
+            if (sortedDates.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:#888;">لا توجد أيام مؤرشفة</p>`;
+                return;
+            }
+            sortedDates.forEach(dateStr => {
+                let zReport = getSafeJSON('zreport_' + dateStr, null);
+                let cost = zReport ? zReport.cost : 0;
+                
+                let dayCard = document.createElement('div');
+                dayCard.className = 'history-day-card';
+                dayCard.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleHistoryDayAccordion('${dateStr}', this)">
+                        <div style="display:flex; flex-direction:column; gap:2px;">
+                            <span style="font-weight:bold; color:var(--accent-blue);">📅 ${dateStr}</span>
+                            <span style="font-size:12px; color:#eab308; font-weight:bold;">التكلفة: ${cost} د.ج</span>
+                        </div>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <button class="btn-sm btn-delete" style="padding:4px 8px;" onclick="event.stopPropagation(); deleteArchivedDay('${dateStr}')">🗑️ حذف اليوم</button>
+                            <span style="font-size:14px; color:var(--accent-blue);" class="accordion-arrow">▼</span>
+                        </div>
+                    </div>
+                    <div id="history_details_${dateStr}" style="display:none; margin-top:10px; border-top:1px solid var(--border-color); padding-top:10px;"></div>
+                `;
+                container.appendChild(dayCard);
+            });
+        }
+
+        function toggleHistoryDayAccordion(dateStr, headerEl) {
+            let detailsDiv = document.getElementById('history_details_' + dateStr);
+            let arrow = headerEl.querySelector('.accordion-arrow');
+            
+            if (detailsDiv.style.display === 'block') {
+                detailsDiv.style.display = 'none';
+                if (arrow) arrow.innerText = '▼';
+            } else {
+                document.querySelectorAll('[id^="history_details_"]').forEach(el => el.style.display = 'none');
+                document.querySelectorAll('.accordion-arrow').forEach(el => el.innerText = '▼');
+                
+                detailsDiv.style.display = 'block';
+                if (arrow) arrow.innerText = '▲';
+                
+                currentSelectedHistoryDate = dateStr;
+                populateHistoryDayContent(dateStr, detailsDiv);
+            }
+        }
+
+        function populateHistoryDayContent(dateStr, containerEl) {
+            let salesHistory = getSafeJSON('archived_sales_' + dateStr, dateStr === today ? getSafeStorageToday('sales_' + dateStr) : getSafeJSON('sales_' + dateStr, []));
+            let bonsHistory = getSafeJSON('archived_bons_' + dateStr, dateStr === today ? getSafeStorageToday('bons_' + dateStr) : getSafeJSON('bons_' + dateStr, []));
+            
+            if (bonsHistory.length > 0) {
+                bonsHistory = normalizeBons(bonsHistory);
+                if (dateStr === today) {
+                    setSafeStorageToday('bons_' + dateStr, bonsHistory);
+                } else {
+                    localStorage.setItem('archived_bons_' + dateStr, JSON.stringify(bonsHistory));
+                }
+            }
+
+            let zReport = getSafeJSON('zreport_' + dateStr, null);
+            let totalRevenue = 0, totalCost = 0;
+            salesHistory.forEach(item => { totalRevenue += item.total; totalCost += ((item.buyPrice || 0) * item.qty); });
+            let netProfit = totalRevenue - totalCost;
+
+            let zReportHtml = '';
+            if (zReport && zReport.salesItems) {
+                let itemsSummary = {};
+                zReport.salesItems.forEach(item => {
+                    let bp = item.buyPrice || 0;
+                    if (!itemsSummary[item.name]) itemsSummary[item.name] = { qty: 0, cost: 0, revenue: 0, profit: 0 };
+                    itemsSummary[item.name].qty += item.qty;
+                    itemsSummary[item.name].cost += (bp * item.qty);
+                    itemsSummary[item.name].revenue += item.total;
+                    itemsSummary[item.name].profit += (item.total - (bp * item.qty));
+                });
+                let tableRows = '';
+                let zIdx = 0;
+                for (let itemName in itemsSummary) {
+                    let s = itemsSummary[itemName];
+                    zIdx++;
+                    tableRows += `<tr><td class="num-col">${zIdx}</td><td><b>${itemName}</b></td><td>${s.qty}</td><td>${s.cost} د.ج</td><td class="privacy-hide">${s.revenue} د.ج</td><td class="privacy-hide" style="color:var(--accent-green);">${s.profit} د.ج</td></tr>`;
+                }
+                zReportHtml = `<div class="z-report-card"><div style="font-weight:bold; color:#eab308; text-align:center;">📑 Z-Report</div><div style="margin-top:8px; overflow-x:auto;"><table><thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th>الشراء</th><th class="privacy-hide">البيع</th><th class="privacy-hide">الفايدة</th></tr></thead><tbody>${tableRows}</tbody></table></div></div>`;
+            }
+
+            let bonsHtml = '';
+            if (bonsHistory.length === 0) {
+                bonsHtml = `<p style="text-align:center;color:#888;">لا توجد بونات</p>`;
+            } else {
+                for (let i = bonsHistory.length - 1; i >= 0; i--) {
+                    let bon = bonsHistory[i];
+                    if (!bon || !bon.items) continue;
+                    let itemsDetail = bon.items.map(it => `${it.name} (${it.qty}×${it.price})`).join(' ، ');
+                    bonsHtml += `
+                        <div class="bon-card">
+                            <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--accent-blue);">
+                                <span>${bon.quick ? '⚡ ' : ''}${bon.isDebtPayment ? '📝 ' : ''}Bon #${bon.id} [${bon.time}]${bon.edited ? ' <small style=\'color:#eab308;\'>(معدّل)</small>' : ''}</span>
+                                <div style="display:flex; gap:8px; align-items:center;">
+                                    <span class="privacy-hide" style="color:var(--accent-green);">${bon.total} د.ج</span>
+                                    <span class="privacy-show" style="color:#eab308;">تكلفة: ${bon.totalCost || 0} د.ج</span>
+                                    <button class="btn-sm btn-delete" style="padding:2px 6px;" onclick="deleteArchivedBon('${dateStr}', ${i})">🗑️ حذف</button>
+                                </div>
+                            </div>
+                            <div class="privacy-hide" style="font-size:11px; color:#aaa; margin-top:2px;">${itemsDetail} ${bon.customer ? `<span style="color:var(--accent-blue);">[تسديد: ${bon.customer}]</span>` : ''}</div>
+                            <div style="display:flex; gap:6px; margin-top:6px;">
+                                <button class="btn-sm btn-edit" style="padding:4px 10px;" onclick="showReceipt('${dateStr}', ${i}, 'archive')">🧾 إظهار ايصال المعاملة</button>
+                                <button class="btn-sm" style="padding:4px 10px; background:#eab308; color:#000; border:none;" onclick="openEditBonModal('${dateStr}', ${i}, 'archive')">✏️ تعديل</button>
+                            </div>
+                        </div>`;
+                }
+            }
+
+            containerEl.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight:bold; color:var(--accent-blue); font-size:14px;">تفاصيل اليوم</span>
+                    <button class="btn-sm btn-edit" onclick="openAddBonToHistoryModal()">➕ إضافة بون منسي</button>
+                </div>
+                
+                ${zReportHtml}
+
+                <div class="stat-box privacy-hide"><span>المبيعات:</span><span>${totalRevenue} د.ج</span></div>
+                <div class="stat-box"><span>التكلفة:</span><span>${totalCost} د.ج</span></div>
+                <div class="stat-box profit privacy-hide"><span>صافي الربح:</span><span>${netProfit} د.ج</span></div>
+
+                <h4 style="color:var(--accent-blue); margin:12px 0 6px 0; font-size:13px;">🧾 البونات التفصيلية:</h4>
+                <div style="max-height: 250px; overflow-y: auto;">${bonsHtml}</div>
+            `;
+        }
+
+        function deleteArchivedBon(dateStr, bonIndex) {
+            let bonsKey = 'archived_bons_' + dateStr;
+            let salesKey = 'archived_sales_' + dateStr;
+            let bonsHistory = getSafeJSON(bonsKey, []);
+            let targetBon = bonsHistory[bonIndex];
+            if (!targetBon) return;
+
+            if (confirm(`هل أنت متأكد من حذف البون #${targetBon.id} من أرشيف ${dateStr}؟\n- سيتم إرجاع الكميات إلى الستوك.`)) {
+                if (targetBon.items && Array.isArray(targetBon.items)) {
+                    targetBon.items.forEach(item => {
+                        restoreStockSmart(item.name, item.qty);
+                    });
+                }
+                localStorage.setItem('products', JSON.stringify(products));
+
+                bonsHistory.splice(bonIndex, 1);
+                bonsHistory = normalizeBons(bonsHistory);
+
+                let newSalesHistory = [];
+                bonsHistory.forEach(b => { if (b.items) b.items.forEach(i => { newSalesHistory.push(i); }); });
+
+                localStorage.setItem(bonsKey, JSON.stringify(bonsHistory));
+                localStorage.setItem('archived_sales_' + dateStr, JSON.stringify(newSalesHistory));
+
+                let totalRev = 0, totalCost = 0;
+                newSalesHistory.forEach(i => {
+                    totalRev += i.total;
+                    totalCost += ((i.buyPrice || 0) * i.qty);
+                });
+                let netProfit = totalRev - totalCost;
+
+                let zReport = {
+                    date: dateStr,
+                    revenue: totalRev,
+                    cost: totalCost,
+                    profit: netProfit,
+                    totalBons: bonsHistory.length,
+                    closedAt: 'محدث يدوياً (حذف بون)',
+                    salesItems: newSalesHistory,
+                    allBons: bonsHistory
+                };
+                localStorage.setItem('zreport_' + dateStr, JSON.stringify(zReport));
+
+                updateProductViews();
+                let detailsDiv = document.getElementById('history_details_' + dateStr);
+                if (detailsDiv) {
+                    populateHistoryDayContent(dateStr, detailsDiv);
+                }
+                loadHistoryDaysList();
+                setTimeout(() => {
+                    let div = document.getElementById('history_details_' + dateStr);
+                    if(div) div.style.display = 'block';
+                }, 50);
+                alert('تم حذف البون وإرجاع الستوك بنجاح!');
+            }
+        }
+
+        function deleteArchivedDay(dateStr) {
+            if (confirm(`تأكيد حذف أرشيف (${dateStr}) نهائياً؟`)) {
+                for (let i = localStorage.length - 1; i >= 0; i--) {
+                    let k = localStorage.key(i);
+                    if (k && k.includes(dateStr)) localStorage.removeItem(k);
+                }
+                loadHistoryDaysList();
+                alert('تم الحذف بنجاح!');
+            }
+        }
+
+        function exportToCSV() {
+            let salesHistory = getSafeStorageToday('sales_' + today);
+            if (salesHistory.length === 0) return alert('لا توجد مبيعات لتصديرها!');
+            let csvContent = "\uFEFF" + "Item,Qty,Price,Total\n";
+            salesHistory.forEach(item => {
+                csvContent += `"${item.name}",${item.qty},${item.price},${item.total}\n`;
+            });
+            let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = `Sales_Report_${today}.csv`;
+            a.click();
+        }
+
+        updateProductViews();
+        renderDailyReport();
+        renderDebts();
+        renderSupplyBonsList();
+    </script>
+</body>
+</html>
