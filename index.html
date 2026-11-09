@@ -491,38 +491,68 @@
         </div>
     </div>
 
-    <!-- Tab 3: ربط دمج المبيعات -->
+    <!-- Tab 3: ربط دمج المبيعات والعلب الكبيرة -->
     <div id="bundleTab" class="tab-content">
-        <div class="card">
-            <h3 style="color: var(--accent-purple);">🔗 ربط سلعتين أو أكثر ليظهروا كسلعة واحدة في المبيعات</h3>
-            <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">
-                مثال: تربط (coca can) و (sprite can) بحيث عند بيعهما معاً يخصم الستوك لكل منهما بشكل طبيعي، ولكن في تقرير المبيعات اليومي تظهر الكميات مجتمعة تحت اسم سلعة رئيسية واحدة (مثل coca can أو أي اسم تختاره). الستوك لا يتأثر أبداً بالدمج.
-            </p>
+        <div class="grid-container">
+            <div class="card">
+                <h3 style="color: var(--accent-purple);">🔗 ربط دمج المبيعات (سلعتين لتظهر كسلعة واحدة)</h3>
+                <p style="font-size: 11.5px; color: #aaa; margin-bottom: 8px;">
+                    مثال: تربط (coca can) و (sprite can) بحيث عند بيعهما يخصم الستوك لكل منهما، وفي تقرير المبيعات تظهر تحت اسم رئيسي واحد.
+                </p>
 
-            <input type="text" id="bundleName" placeholder="اسم مجموعة الدمج أو السلعة الرئيسية الظاهرة في التقرير (مثال: مشروبات غازية)">
-            
-            <div style="margin: 8px 0;">
-                <label style="font-size: 12px; color: var(--accent-blue); display: block; margin-bottom: 4px;">السلعة الفرعية الأولى (مثل coca can):</label>
-                <div class="search-box-wrapper">
-                    <input type="text" id="bundleItem1" placeholder="🔍 ابحث عن السلعة الأولى..." autocomplete="off" oninput="filterProducts('bundle1', this.value)">
-                    <div id="bundle1Suggestions" class="custom-suggestions"></div>
+                <input type="text" id="bundleName" placeholder="اسم مجموعة الدمج (مثال: مشروبات غازية)">
+                
+                <div style="margin: 6px 0;">
+                    <label style="font-size: 11.5px; color: var(--accent-blue); display: block; margin-bottom: 2px;">السلعة الفرعية الأولى:</label>
+                    <div class="search-box-wrapper">
+                        <input type="text" id="bundleItem1" placeholder="🔍 ابحث عن السلعة الأولى..." autocomplete="off" oninput="filterProducts('bundle1', this.value)">
+                        <div id="bundle1Suggestions" class="custom-suggestions"></div>
+                    </div>
                 </div>
+
+                <div style="margin: 6px 0;">
+                    <label style="font-size: 11.5px; color: var(--accent-blue); display: block; margin-bottom: 2px;">السلعة الفرعية الثانية:</label>
+                    <div class="search-box-wrapper">
+                        <input type="text" id="bundleItem2" placeholder="🔍 ابحث عن السلعة الثانية..." autocomplete="off" oninput="filterProducts('bundle2', this.value)">
+                        <div id="bundle2Suggestions" class="custom-suggestions"></div>
+                    </div>
+                </div>
+
+                <button class="action-btn" style="background: var(--accent-purple); color: #fff;" onclick="saveBundleRule()">💾 حفظ قاعدة الدمج</button>
+
+                <h3 style="margin-top: 15px; color: var(--accent-purple);">📋 قواعد الدمج المسجلة</h3>
+                <div id="bundlesList"></div>
             </div>
 
-            <div style="margin: 8px 0;">
-                <label style="font-size: 12px; color: var(--accent-blue); display: block; margin-bottom: 4px;">السلعة الفرعية الثانية (مثل sprite can):</label>
-                <div class="search-box-wrapper">
-                    <input type="text" id="bundleItem2" placeholder="🔍 ابحث عن السلعة الثانية..." autocomplete="off" oninput="filterProducts('bundle2', this.value)">
-                    <div id="bundle2Suggestions" class="custom-suggestions"></div>
+            <div class="card">
+                <h3 style="color: var(--accent-blue);">📦 ربط بالعلبة الكبيرة (الفتح التلقائي للباك)</h3>
+                <p style="font-size: 11.5px; color: #aaa; margin-bottom: 8px;">
+                    اربط السلعة بصندوقها الكبير (مثل: عبوة مياه مربوطة بصندوق مياه يحتوي 4 عبوات)، ليتم الخصم تلقائياً عند نفاذ العبوات الفردية.
+                </p>
+
+                <div style="margin: 6px 0;">
+                    <label style="font-size: 11.5px; color: var(--accent-blue); display: block; margin-bottom: 2px;">السلعة الفردية:</label>
+                    <div class="search-box-wrapper">
+                        <input type="text" id="boxLinkItemSearch" placeholder="🔍 ابحث عن السلعة الفردية..." autocomplete="off" oninput="filterProducts('boxLinkItem', this.value)">
+                        <div id="boxLinkItemSuggestions" class="custom-suggestions"></div>
+                    </div>
                 </div>
+
+                <div style="margin: 6px 0;">
+                    <label style="font-size: 11.5px; color: var(--accent-blue); display: block; margin-bottom: 2px;">السلعة الكبرى (الصندوق / الباك):</label>
+                    <div class="search-box-wrapper">
+                        <input type="text" id="boxLinkParentSearch" placeholder="🔍 ابحث عن العلبة الكبرى..." autocomplete="off" oninput="filterProducts('boxLinkParent', this.value)">
+                        <div id="boxLinkParentSuggestions" class="custom-suggestions"></div>
+                    </div>
+                </div>
+
+                <input type="number" id="boxLinkRatio" placeholder="كم تحتوي العلبة الكبرى من هذه السلعة؟ (مثال: 4)">
+
+                <button class="action-btn" style="background: var(--accent-blue); color: #000;" onclick="saveBoxLinkRule()">💾 حفظ ربط العلبة الكبيرة</button>
+
+                <h3 style="margin-top: 15px; color: var(--accent-blue);">📋 السلع المربوطة بالعلب الكبيرة</h3>
+                <div id="boxLinksList"></div>
             </div>
-
-            <button class="action-btn" style="background: var(--accent-purple); color: #fff;" onclick="saveBundleRule()">💾 حفظ قاعدة الربط والدمج</button>
-        </div>
-
-        <div class="card">
-            <h3>📋 قواعد الدمج المسجلة</h3>
-            <div id="bundlesList"></div>
         </div>
     </div>
 
@@ -670,59 +700,57 @@
 
     <!-- Tab 8: الستوك -->
     <div id="stockTab" class="tab-content active">
-        <div class="card">
-            <h3 style="display:flex; justify-content:space-between; align-items:center;">
-                <span>🔍 بحث سريع عن الكمية</span>
-                <button class="btn-sm btn-delete" style="padding: 2px 8px; font-size: 11px;" onclick="clearQuickSearch()">🧹 مسح (Clear)</button>
-            </h3>
-            <div class="search-box-wrapper">
-                <input type="text" id="stockQuickSearch" placeholder="🔍 اكتب اسم السلعة لمعرفة الكمية فوراً..." autocomplete="off" oninput="quickStockSearch(this.value)">
-            </div>
-            <div id="stockQuickResult"></div>
-        </div>
-
-        <div class="card">
-            <h3>📈 ملخص وقيمة الستوك</h3>
-            <div class="stat-box"><span>عدد الأنواع:</span><span id="totalItemsCount">0</span></div>
-            <div class="stat-box"><span>تكلفة الشراء:</span><span id="stockTotalBuy">0 د.ج</span></div>
-            <div class="stat-box privacy-hide"><span>قيمة البيع المتوقعة:</span><span id="stockTotalSell">0 د.ج</span></div>
-            <div class="stat-box profit privacy-hide"><span>الربح المتوقع:</span><span id="stockExpectedProfit">0 د.ج</span></div>
-        </div>
-
-        <div class="card">
-            <h3 style="display:flex; justify-content:space-between; align-items:center;">
-                <span>➕ إضافة / تعديل السلعة</span>
-                <button class="btn-sm btn-delete" style="padding: 2px 8px; font-size: 11px;" onclick="clearProductForm()">🧹 مسح الخانات (Clear)</button>
-            </h3>
-            <div class="search-box-wrapper">
-                <input type="text" id="pName" placeholder="اسم السلعة (ابحث أولاً لتفادي التكرار)" autocomplete="off" oninput="filterPNameSuggestions(this.value)">
-                <div id="pNameSuggestions" class="custom-suggestions"></div>
-            </div>
-            <input type="number" id="pBuyPrice" placeholder="سعر الشراء (التكلفة)">
-            <input type="number" id="pSellPrice" placeholder="سعر البيع الافتراضي">
-            <input type="number" id="pStock" placeholder="الكمية المتوفرة (استبدال كامل للرقم القديم)">
-            
-            <div style="background: var(--input-bg); border: 1px dashed var(--accent-blue); padding: 8px; border-radius: 8px; margin: 8px 0;">
-                <label style="font-size: 11px; color: var(--accent-blue); font-weight: bold; display: block; margin-bottom: 4px;">🔗 ربط بالعلبة الكبيرة (اختياري - للتحويل التلقائي عند فتح الباك):</label>
-                <input type="text" id="pParentName" placeholder="اسم السلعة الكبرى (مثال: صندوق شوابس)">
-                <input type="number" id="pPackRatio" placeholder="كم يحتوي الصندوق الكبير من هذه السلعة؟ (مثال: 4)">
+        <div class="grid-container">
+            <div class="card">
+                <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>🔍 بحث سريع عن الكمية</span>
+                    <button class="btn-sm btn-delete" style="padding: 2px 8px; font-size: 11px;" onclick="clearQuickSearch()">🧹 مسح (Clear)</button>
+                </h3>
+                <div class="search-box-wrapper">
+                    <input type="text" id="stockQuickSearch" placeholder="🔍 اكتب اسم السلعة لمعرفة الكمية فوراً..." autocomplete="off" oninput="quickStockSearch(this.value)">
+                </div>
+                <div id="stockQuickResult"></div>
             </div>
 
-            <button class="action-btn" style="background:var(--accent-blue); color:#000;" onclick="addProduct()">حفظ / تحديث السلعة (استبدال كامل)</button>
+            <div class="card">
+                <h3>📈 ملخص وقيمة الستوك</h3>
+                <div class="stat-box"><span>عدد الأنواع:</span><span id="totalItemsCount">0</span></div>
+                <div class="stat-box"><span>تكلفة الشراء:</span><span id="stockTotalBuy">0 د.ج</span></div>
+                <div class="stat-box privacy-hide"><span>قيمة البيع المتوقعة:</span><span id="stockTotalSell">0 د.ج</span></div>
+                <div class="stat-box profit privacy-hide"><span>الربح المتوقع:</span><span id="stockExpectedProfit">0 د.ج</span></div>
+            </div>
 
-            <hr style="border-color: var(--border-color); margin: 14px 0;">
+            <div class="card">
+                <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>➕ إضافة / تعديل السلعة</span>
+                    <button class="btn-sm btn-delete" style="padding: 2px 8px; font-size: 11px;" onclick="clearProductForm()">🧹 مسح الخانات (Clear)</button>
+                </h3>
+                <div class="search-box-wrapper">
+                    <input type="text" id="pName" placeholder="اسم السلعة (ابحث أولاً لتفادي التكرار)" autocomplete="off" oninput="filterPNameSuggestions(this.value)">
+                    <div id="pNameSuggestions" class="custom-suggestions"></div>
+                </div>
+                <input type="number" id="pBuyPrice" placeholder="سعر الشراء (التكلفة)">
+                <input type="number" id="pSellPrice" placeholder="سعر البيع الافتراضي">
+                <input type="number" id="pStock" placeholder="الكمية المتوفرة (استبدال كامل للرقم القديم)">
+                
+                <button class="action-btn" style="background:var(--accent-blue); color:#000;" onclick="addProduct()">حفظ / تحديث السلعة (استبدال كامل)</button>
 
-            <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">📦 توريد: إضافة كمية فوق الستوك الحالي (بدون حذف القديم)</label>
-            <input type="number" id="pAddStockQty" placeholder="الكمية المراد إضافتها">
-            <button class="action-btn" style="background:var(--accent-green); color:#000;" onclick="addStockQty()">➕ إضافة للستوك الحالي</button>
-        </div>
+                <hr style="border-color: var(--border-color); margin: 14px 0;">
 
-        <div class="card">
-            <h3>📋 قائمة المخزون الحالي</h3>
-            <table id="stockTable">
-                <thead><tr><th>#</th><th>السلعة</th><th>الستوك</th><th>الشراء</th><th class="privacy-hide">البيع</th><th>إجراء</th></tr></thead>
-                <tbody></tbody>
-            </table>
+                <label style="font-size: 12px; color: #aaa; display: block; margin-bottom: 4px;">📦 توريد: إضافة كمية فوق الستوك الحالي (بدون حذف القديم)</label>
+                <input type="number" id="pAddStockQty" placeholder="الكمية المراد إضافتها">
+                <button class="action-btn" style="background:var(--accent-green); color:#000;" onclick="addStockQty()">➕ إضافة للستوك الحالي</button>
+            </div>
+
+            <div class="card">
+                <h3>📋 قائمة المخزون الحالي</h3>
+                <div style="max-height: 350px; overflow-y: auto;">
+                    <table id="stockTable">
+                        <thead><tr><th>#</th><th>السلعة</th><th>الستوك</th><th>الشراء</th><th class="privacy-hide">البيع</th><th>إجراء</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -912,6 +940,7 @@
             updateProductViews();
             renderSupplyBonsList();
             renderBundlesList();
+            renderBoxLinksList();
         }
 
         function toggleSettingsModal() {
@@ -964,7 +993,10 @@
             if (tabId === 'debtTab') renderDebts();
             if (tabId === 'checkListTab') renderCheckListUI();
             if (tabId === 'supplyTab') renderSupplyBonsList();
-            if (tabId === 'bundleTab') renderBundlesList();
+            if (tabId === 'bundleTab') {
+                renderBundlesList();
+                renderBoxLinksList();
+            }
         }
 
         document.querySelectorAll('.custom-suggestions').forEach(box => {
@@ -999,6 +1031,8 @@
             let searchInputId = type;
             if (type === 'bundle1') searchInputId = 'bundleItem1';
             else if (type === 'bundle2') searchInputId = 'bundleItem2';
+            else if (type === 'boxLinkItem') searchInputId = 'boxLinkItemSearch';
+            else if (type === 'boxLinkParent') searchInputId = 'boxLinkParentSearch';
             else searchInputId = type + 'ProductSearch';
 
             positionSuggestionsBox(suggestionsBox, document.getElementById(searchInputId));
@@ -1054,13 +1088,11 @@
             document.getElementById('pBuyPrice').value = '';
             document.getElementById('pSellPrice').value = '';
             document.getElementById('pStock').value = '';
-            document.getElementById('pParentName').value = '';
-            document.getElementById('pPackRatio').value = '';
             let sugg = document.getElementById('pNameSuggestions');
             if (sugg) sugg.style.display = 'none';
         }
 
-        /* --- إعدادات قواعد الدمج (Bundles) --- */
+        /* --- إعدادات قواعد الدمج والربط (Bundles & Box Links) --- */
 
         function saveBundleRule() {
             let bundleName = document.getElementById('bundleName').value.trim();
@@ -1106,6 +1138,73 @@
                             <div style="font-size:11px; color:#aaa; margin-top:2px;">يتم دمج مبيعات: <b>${b.item1}</b> + <b>${b.item2}</b></div>
                         </div>
                         <button class="btn-sm btn-delete" onclick="deleteBundleRule(${b.id})">🗑️ حذف</button>
+                    </div>`;
+            });
+        }
+
+        function saveBoxLinkRule() {
+            let itemName = document.getElementById('boxLinkItemSearch').value.trim();
+            let parentName = document.getElementById('boxLinkParentSearch').value.trim();
+            let packRatio = parseInt(document.getElementById('boxLinkRatio').value);
+
+            if (!itemName || !parentName || isNaN(packRatio) || packRatio <= 0) {
+                return alert('يرجى تحديد السلعة، اسم العلبة الكبرى، والنسبة بشكل صحيح');
+            }
+
+            if (!products[itemName]) {
+                return alert('السلعة غير موجودة في الستوك!');
+            }
+            if (!products[parentName]) {
+                products[parentName] = { buy: 0, sell: 0, stock: 0 };
+            }
+
+            products[itemName].parentName = parentName;
+            products[itemName].packRatio = packRatio;
+
+            localStorage.setItem('products', JSON.stringify(products));
+            document.getElementById('boxLinkItemSearch').value = '';
+            document.getElementById('boxLinkParentSearch').value = '';
+            document.getElementById('boxLinkRatio').value = '';
+            renderBoxLinksList();
+            updateProductViews();
+            alert('تم ربط السلعة بالعلبة الكبرى بنجاح!');
+        }
+
+        function removeBoxLink(itemName) {
+            if (!products[itemName]) return;
+            if (confirm(`إلغاء ربط "${itemName}" بالعلبة الكبرى؟`)) {
+                delete products[itemName].parentName;
+                delete products[itemName].packRatio;
+                localStorage.setItem('products', JSON.stringify(products));
+                renderBoxLinksList();
+                updateProductViews();
+            }
+        }
+
+        function renderBoxLinksList() {
+            let container = document.getElementById('boxLinksList');
+            if (!container) return;
+            container.innerHTML = '';
+            let linkedItems = [];
+            for (let name in products) {
+                if (products[name].parentName) {
+                    linkedItems.push({ name, parentName: products[name].parentName, ratio: products[name].packRatio });
+                }
+            }
+
+            if (linkedItems.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:#888;">لا توجد سلع مربوطة بالعلب الكبيرة</p>`;
+                return;
+            }
+
+            linkedItems.forEach(item => {
+                container.innerHTML += `
+                    <div class="bon-card" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <span style="font-weight:bold; color:var(--accent-blue);">📦 ${item.name}</span>
+                            <div style="font-size:11px; color:#aaa; margin-top:2px;">يفتح من: <b>${item.parentName}</b> (كل علبة = ${item.ratio} قطعة)</div>
+                        </div>
+                        <button class="btn-sm btn-delete" onclick="removeBoxLink('${item.name}')">🗑️ إلغاء الربط</button>
                     </div>`;
             });
         }
@@ -1405,20 +1504,23 @@
             let buy = parseFloat(document.getElementById('pBuyPrice').value);
             let sell = parseFloat(document.getElementById('pSellPrice').value);
             let stock = parseInt(document.getElementById('pStock').value);
-            let parentName = document.getElementById('pParentName').value.trim();
-            let packRatio = parseInt(document.getElementById('pPackRatio').value) || 0;
 
             if (!name || isNaN(buy) || isNaN(sell) || isNaN(stock)) return alert('يرجى ملء كافة الحقول الأساسية');
 
-            products[name] = { buy, sell, stock, parentName, packRatio };
+            if (!products[name]) {
+                products[name] = { buy, sell, stock };
+            } else {
+                products[name].buy = buy;
+                products[name].sell = sell;
+                products[name].stock = stock;
+            }
+
             localStorage.setItem('products', JSON.stringify(products));
             
             document.getElementById('pName').value = '';
             document.getElementById('pBuyPrice').value = '';
             document.getElementById('pSellPrice').value = '';
             document.getElementById('pStock').value = '';
-            document.getElementById('pParentName').value = '';
-            document.getElementById('pPackRatio').value = '';
 
             updateProductViews();
             alert('تمت إضافة/تحديث السلعة بنجاح!');
@@ -1515,8 +1617,6 @@
                     document.getElementById('pBuyPrice').value = p.buy;
                     document.getElementById('pSellPrice').value = p.sell;
                     document.getElementById('pStock').value = p.stock;
-                    document.getElementById('pParentName').value = p.parentName || '';
-                    document.getElementById('pPackRatio').value = p.packRatio || '';
                     suggestionsBox.style.display = 'none';
                 };
                 suggestionsBox.appendChild(div);
@@ -1540,8 +1640,6 @@
             document.getElementById('pName').value = '';
             document.getElementById('pBuyPrice').value = '';
             document.getElementById('pStock').value = '';
-            document.getElementById('pParentName').value = '';
-            document.getElementById('pPackRatio').value = '';
 
             updateProductViews();
             alert(`تمت إضافة ${addQty} إلى ستوك "${name}"! الستوك الجديد: ${newStock}`);
@@ -1554,8 +1652,6 @@
             document.getElementById('pBuyPrice').value = p.buy;
             document.getElementById('pSellPrice').value = p.sell;
             document.getElementById('pStock').value = p.stock;
-            document.getElementById('pParentName').value = p.parentName || '';
-            document.getElementById('pPackRatio').value = p.packRatio || '';
         }
 
         function deleteProduct(name) {
@@ -2758,7 +2854,7 @@
             if (salesHistory.length === 0) return alert('لا توجد مبيعات لتصديرها!');
             let csvContent = "\uFEFF" + "Item,Qty,Price,Total\n";
             salesHistory.forEach(item => {
-                csvContent += `"${item.name}",{item.qty},${item.price || 0},${item.total}\n`;
+                csvContent += `"${item.name}",${item.qty},${item.price || 0},${item.total}\n`;
             });
             let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             let url = URL.createObjectURL(blob);
@@ -2769,11 +2865,11 @@
         }
 
         updateProductViews();
-        renderDailyResult = renderDailyReport;
         renderDailyReport();
         renderDebts();
         renderSupplyBonsList();
         renderBundlesList();
+        renderBoxLinksList();
     </script>
 </body>
 </html>
