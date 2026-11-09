@@ -364,6 +364,7 @@
     <div class="nav-tabs">
         <div class="tab-btn active" onclick="switchTab('posTab', this)">🛒 البيع واليومية</div>
         <div class="tab-btn" onclick="switchTab('supplyTab', this)" style="border-color: var(--accent-green);">🚚 مشتروات وبضاعة جديدة</div>
+        <div class="tab-btn" onclick="switchTab('bundleTab', this)" style="border-color: var(--accent-purple);">🔗 ربط دمج المبيعات</div>
         <div class="tab-btn" onclick="switchTab('checkListTab', this)" style="border-color: #f59e0b;">📋 قائمة المراجعة</div>
         <div class="tab-btn" onclick="switchTab('calcTab', this)" style="border-color: var(--accent-purple);">🧮 حاسبة مؤقتة</div>
         <div class="tab-btn" onclick="switchTab('debtTab', this)">📝 الديون</div>
@@ -490,7 +491,42 @@
         </div>
     </div>
 
-    <!-- Tab 3: قائمة المراجعة -->
+    <!-- Tab 3: ربط دمج المبيعات -->
+    <div id="bundleTab" class="tab-content">
+        <div class="card">
+            <h3 style="color: var(--accent-purple);">🔗 ربط سلعتين أو أكثر ليظهروا كسلعة واحدة في المبيعات</h3>
+            <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">
+                مثال: تربط (coca can) و (sprite can) بحيث عند بيعهما معاً يخصم الستوك لكل منهما بشكل طبيعي، ولكن في تقرير المبيعات اليومي تظهر الكميات مجتمعة تحت اسم سلعة رئيسية واحدة (مثل coca can أو أي اسم تختاره). الستوك لا يتأثر أبداً بالدمج.
+            </p>
+
+            <input type="text" id="bundleName" placeholder="اسم مجموعة الدمج أو السلعة الرئيسية الظاهرة في التقرير (مثال: مشروبات غازية)">
+            
+            <div style="margin: 8px 0;">
+                <label style="font-size: 12px; color: var(--accent-blue); display: block; margin-bottom: 4px;">السلعة الفرعية الأولى (مثل coca can):</label>
+                <div class="search-box-wrapper">
+                    <input type="text" id="bundleItem1" placeholder="🔍 ابحث عن السلعة الأولى..." autocomplete="off" oninput="filterProducts('bundle1', this.value)">
+                    <div id="bundle1Suggestions" class="custom-suggestions"></div>
+                </div>
+            </div>
+
+            <div style="margin: 8px 0;">
+                <label style="font-size: 12px; color: var(--accent-blue); display: block; margin-bottom: 4px;">السلعة الفرعية الثانية (مثل sprite can):</label>
+                <div class="search-box-wrapper">
+                    <input type="text" id="bundleItem2" placeholder="🔍 ابحث عن السلعة الثانية..." autocomplete="off" oninput="filterProducts('bundle2', this.value)">
+                    <div id="bundle2Suggestions" class="custom-suggestions"></div>
+                </div>
+            </div>
+
+            <button class="action-btn" style="background: var(--accent-purple); color: #fff;" onclick="saveBundleRule()">💾 حفظ قاعدة الربط والدمج</button>
+        </div>
+
+        <div class="card">
+            <h3>📋 قواعد الدمج المسجلة</h3>
+            <div id="bundlesList"></div>
+        </div>
+    </div>
+
+    <!-- Tab 4: قائمة المراجعة -->
     <div id="checkListTab" class="tab-content">
         <div class="card">
             <h3 style="color: #f59e0b;">📋 تسجيل السلع للمراجعة (لا تؤثر على الستوك)</h3>
@@ -515,7 +551,7 @@
         </div>
     </div>
 
-    <!-- Tab 4: الحاسبة المؤقتة -->
+    <!-- Tab 5: الحاسبة المؤقتة -->
     <div id="calcTab" class="tab-content">
         <div class="card">
             <h3 style="color: var(--accent-purple);">🧮 حاسبة التكلفة والبيع والفايدة (مؤقتة)</h3>
@@ -548,7 +584,7 @@
         </div>
     </div>
 
-    <!-- Tab 5: سجل الديون -->
+    <!-- Tab 6: سجل الديون -->
     <div id="debtTab" class="tab-content">
         <div class="grid-container">
             <div class="card">
@@ -591,7 +627,7 @@
         </div>
     </div>
 
-    <!-- Tab 6: أرشيف الأيام -->
+    <!-- Tab 7: أرشيف الأيام -->
     <div id="historyTab" class="tab-content">
         <div class="card">
             <h3>📅 الأيام المؤرشفة تلقائياً</h3>
@@ -632,7 +668,7 @@
         </div>
     </div>
 
-    <!-- Tab 7: الستوك -->
+    <!-- Tab 8: الستوك -->
     <div id="stockTab" class="tab-content">
         <div class="card">
             <h3>🔍 بحث سريع عن الكمية</h3>
@@ -651,7 +687,10 @@
         </div>
 
         <div class="card">
-            <h3>➕ إضافة / تعديل السلعة</h3>
+            <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                <span>➕ إضافة / تعديل السلعة</span>
+                <button class="btn-sm btn-delete" style="padding: 2px 8px; font-size: 11px;" onclick="clearProductForm()">🧹 مسح الخانات (Clear)</button>
+            </h3>
             <div class="search-box-wrapper">
                 <input type="text" id="pName" placeholder="اسم السلعة (ابحث أولاً لتفادي التكرار)" autocomplete="off" oninput="filterPNameSuggestions(this.value)">
                 <div id="pNameSuggestions" class="custom-suggestions"></div>
@@ -700,7 +739,6 @@
             return data.filter(item => item && typeof item === 'object' && Object.keys(item).length > 0 && Array.isArray(item.items) && item.items.length > 0);
         }
 
-        // دالة مخصصة آمنة لجلب مبيعات اليوم المفردة دون فلتر البونات
         function getSafeSalesToday(key) {
             let data = getSafeJSON(key, []);
             if (!Array.isArray(data)) return [];
@@ -717,6 +755,7 @@
         let products = getSafeJSON('products', {});
         let debts = getSafeJSON('debts', []);
         let checkListItems = getSafeJSON('checkListItems', []);
+        let bundles = getSafeJSON('bundles', []);
         let supplyCart = [];
         let cart = [];
         let debtCart = [];
@@ -800,7 +839,7 @@
 
         function parseTimeValue(timeStr) {
             if (!timeStr) return 0;
-            let str = timeStr.toString().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+            let str = timeStr.toString().replace(/[٠-٩]/g, d => '٠١ي٢٣٤٥٦٧٨٩'.indexOf(d));
             let isPM = str.includes('م');
             let isAM = str.includes('ص');
             let match = str.match(/(\d+):(\d+)/);
@@ -869,6 +908,7 @@
             renderDailyReport();
             updateProductViews();
             renderSupplyBonsList();
+            renderBundlesList();
         }
 
         function toggleSettingsModal() {
@@ -921,6 +961,7 @@
             if (tabId === 'debtTab') renderDebts();
             if (tabId === 'checkListTab') renderCheckListUI();
             if (tabId === 'supplyTab') renderSupplyBonsList();
+            if (tabId === 'bundleTab') renderBundlesList();
         }
 
         document.querySelectorAll('.custom-suggestions').forEach(box => {
@@ -952,7 +993,12 @@
                 return;
             }
 
-            positionSuggestionsBox(suggestionsBox, document.getElementById(type + 'ProductSearch'));
+            let searchInputId = type;
+            if (type === 'bundle1') searchInputId = 'bundleItem1';
+            else if (type === 'bundle2') searchInputId = 'bundleItem2';
+            else searchInputId = type + 'ProductSearch';
+
+            positionSuggestionsBox(suggestionsBox, document.getElementById(searchInputId));
 
             matches.forEach(name => {
                 let p = products[name];
@@ -961,7 +1007,7 @@
                 div.innerHTML = `<span><b>${name}</b></span> <span style="color:var(--accent-green);">الستوك: ${p.stock} | ${p.sell} د.ج</span>`;
                 
                 div.onclick = function() {
-                    let searchInput = document.getElementById(type + 'ProductSearch');
+                    let searchInput = document.getElementById(searchInputId);
                     if (searchInput) searchInput.value = name;
                     suggestionsBox.style.display = 'none';
                     
@@ -992,6 +1038,102 @@
                 document.querySelectorAll('.custom-suggestions').forEach(box => box.style.display = 'none');
             }
         });
+
+        /* --- زر تفريغ الخانات (Clear Form) --- */
+        function clearProductForm() {
+            document.getElementById('pName').value = '';
+            document.getElementById('pBuyPrice').value = '';
+            document.getElementById('pSellPrice').value = '';
+            document.getElementById('pStock').value = '';
+            document.getElementById('pParentName').value = '';
+            document.getElementById('pPackRatio').value = '';
+            let sugg = document.getElementById('pNameSuggestions');
+            if (sugg) sugg.style.display = 'none';
+        }
+
+        /* --- إعدادات قواعد الدمج (Bundles) --- */
+
+        function saveBundleRule() {
+            let bundleName = document.getElementById('bundleName').value.trim();
+            let item1 = document.getElementById('bundleItem1').value.trim();
+            let item2 = document.getElementById('bundleItem2').value.trim();
+
+            if (!bundleName || !item1 || !item2) return alert('يرجى ملء اسم مجموعة الدمج وتحديد السلعتين معاً');
+
+            bundles.push({
+                id: Date.now(),
+                bundleName: bundleName,
+                item1: item1,
+                item2: item2
+            });
+
+            localStorage.setItem('bundles', JSON.stringify(bundles));
+            document.getElementById('bundleName').value = '';
+            document.getElementById('bundleItem1').value = '';
+            document.getElementById('bundleItem2').value = '';
+            renderBundlesList();
+            alert('تم حفظ قاعدة الدمج بنجاح!');
+        }
+
+        function deleteBundleRule(id) {
+            if (confirm('حذف قاعدة الدمج هذه؟')) {
+                bundles = bundles.filter(b => b.id !== id);
+                localStorage.setItem('bundles', JSON.stringify(bundles));
+                renderBundlesList();
+            }
+        }
+
+        function renderBundlesList() {
+            let container = document.getElementById('bundlesList');
+            if (!container) return;
+            bundles = getSafeJSON('bundles', []);
+            container.innerHTML = bundles.length === 0 ? `<p style="text-align:center; color:#888;">لا توجد قواعد دمج مسجلة</p>` : '';
+
+            bundles.forEach(b => {
+                container.innerHTML += `
+                    <div class="bon-card" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <span style="font-weight:bold; color:var(--accent-purple);">🔗 ${b.bundleName}</span>
+                            <div style="font-size:11px; color:#aaa; margin-top:2px;">يتم دمج مبيعات: <b>${b.item1}</b> + <b>${b.item2}</b></div>
+                        </div>
+                        <button class="btn-sm btn-delete" onclick="deleteBundleRule(${b.id})">🗑️ حذف</button>
+                    </div>`;
+            });
+        }
+
+        function processSalesWithBundles(salesArray) {
+            if (!Array.isArray(salesArray) || salesArray.length === 0) return [];
+            let activeBundles = getSafeJSON('bundles', []);
+            if (activeBundles.length === 0) return salesArray;
+
+            let processedMap = {};
+
+            salesArray.forEach(saleItem => {
+                let targetName = saleItem.name;
+                let matchedBundle = activeBundles.find(b => b.item1 === saleItem.name || b.item2 === saleItem.name);
+                if (matchedBundle) {
+                    targetName = matchedBundle.bundleName;
+                }
+
+                if (!processedMap[targetName]) {
+                    processedMap[targetName] = {
+                        name: targetName,
+                        qty: 0,
+                        total: 0,
+                        buyPrice: saleItem.buyPrice || 0,
+                        price: saleItem.price || 0,
+                        profit: 0
+                    };
+                }
+                processedMap[targetName].qty += (saleItem.qty || 0);
+                processedMap[targetName].total += (saleItem.total || 0);
+                let lineCost = ((saleItem.buyPrice || 0) * (saleItem.qty || 0));
+                let lineProfit = (saleItem.total || 0) - lineCost;
+                processedMap[targetName].profit += lineProfit;
+            });
+
+            return Object.values(processedMap);
+        }
 
         /* --- بون المشتروات --- */
 
@@ -1548,15 +1690,20 @@
         }
 
         function renderDailyReport() {
-            let salesHistory = getSafeSalesToday('sales_' + today);
+            let rawSalesHistory = getSafeSalesToday('sales_' + today);
+            let salesHistory = processSalesWithBundles(rawSalesHistory);
+
             let tbody = document.querySelector('#dailyTable tbody');
             if (!tbody) return;
             tbody.innerHTML = '';
             let summary = {}, totalRevenue = 0, totalCost = 0;
 
-            salesHistory.forEach(item => {
+            rawSalesHistory.forEach(item => {
                 totalRevenue += (item.total || 0);
                 totalCost += ((item.buyPrice || 0) * (item.qty || 0));
+            });
+
+            salesHistory.forEach(item => {
                 if (!summary[item.name]) summary[item.name] = { qty: 0, revenue: 0 };
                 summary[item.name].qty += (item.qty || 0);
                 summary[item.name].revenue += (item.total || 0);
@@ -1614,7 +1761,7 @@
             if (salesHistory.length === 0 && bonsHistory.length === 0) {
                 for (let i = localStorage.length - 1; i >= 0; i--) {
                     let key = localStorage.key(i);
-                    if (key && key.includes(today) && !key.includes('supply_')) {
+                    if (key && key.includes(today) && !key.includes('supply_') && !key.includes('bundles')) {
                         localStorage.removeItem(key);
                     }
                 }
@@ -1647,7 +1794,7 @@
                 
                 for (let i = localStorage.length - 1; i >= 0; i--) {
                     let key = localStorage.key(i);
-                    if (key && key.includes(today) && !key.includes('archived_') && !key.includes('zreport_') && !key.includes('supply_')) {
+                    if (key && key.includes(today) && !key.includes('archived_') && !key.includes('zreport_') && !key.includes('supply_') && !key.includes('bundles')) {
                         localStorage.removeItem(key);
                     }
                 }
@@ -2394,7 +2541,7 @@
             let foundDates = new Set();
             for (let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
-                if (key && (key.includes('sales_') || key.includes('zreport_') || key.includes('bons_')) && !key.includes('mirror_') && !key.includes('supply_')) {
+                if (key && (key.includes('sales_') || key.includes('zreport_') || key.includes('bons_')) && !key.includes('mirror_') && !key.includes('supply_') && !key.includes('bundles')) {
                     let parts = key.split('_');
                     let dateStr = parts[parts.length - 1];
                     if (dateStr && dateStr.includes('-') && dateStr.length >= 8) foundDates.add(dateStr);
@@ -2448,7 +2595,9 @@
         }
 
         function populateHistoryDayContent(dateStr, containerEl) {
-            let salesHistory = getSafeSalesToday('archived_sales_' + dateStr);
+            let rawSalesHistory = getSafeSalesToday('archived_sales_' + dateStr);
+            let salesHistory = processSalesWithBundles(rawSalesHistory);
+            
             let bonsHistory = getSafeStorageToday('archived_bons_' + dateStr);
             
             if (bonsHistory.length > 0) {
@@ -2458,13 +2607,13 @@
 
             let zReport = getSafeJSON('zreport_' + dateStr, null);
             let totalRevenue = 0, totalCost = 0;
-            salesHistory.forEach(item => { totalRevenue += item.total; totalCost += ((item.buyPrice || 0) * item.qty); });
+            rawSalesHistory.forEach(item => { totalRevenue += item.total; totalCost += ((item.buyPrice || 0) * item.qty); });
             let netProfit = totalRevenue - totalCost;
 
             let zReportHtml = '';
-            if (zReport && zReport.salesItems) {
+            if (rawSalesHistory.length > 0) {
                 let itemsSummary = {};
-                zReport.salesItems.forEach(item => {
+                salesHistory.forEach(item => {
                     let bp = item.buyPrice || 0;
                     if (!itemsSummary[item.name]) itemsSummary[item.name] = { qty: 0, cost: 0, revenue: 0, profit: 0 };
                     itemsSummary[item.name].qty += item.qty;
@@ -2479,7 +2628,7 @@
                     zIdx++;
                     tableRows += `<tr><td class="num-col">${zIdx}</td><td><b>${itemName}</b></td><td>${s.qty}</td><td>${s.cost} د.ج</td><td class="privacy-hide">${s.revenue} د.ج</td><td class="privacy-hide" style="color:var(--accent-green);">${s.profit} د.ج</td></tr>`;
                 }
-                zReportHtml = `<div class="z-report-card"><div style="font-weight:bold; color:#eab308; text-align:center;">📑 Z-Report</div><div style="margin-top:8px; overflow-x:auto;"><table><thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th>الشراء</th><th class="privacy-hide">البيع</th><th class="privacy-hide">الفايدة</th></tr></thead><tbody>${tableRows}</tbody></table></div></div>`;
+                zReportHtml = `<div class="z-report-card"><div style="font-weight:bold; color:#eab308; text-align:center;">📑 Z-Report (مع تطبيق الدمج)</div><div style="margin-top:8px; overflow-x:auto;"><table><thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th>الشراء</th><th class="privacy-hide">البيع</th><th class="privacy-hide">الفايدة</th></tr></thead><tbody>${tableRows}</tbody></table></div></div>`;
             }
 
             let bonsHtml = '';
@@ -2595,11 +2744,12 @@
         }
 
         function exportToCSV() {
-            let salesHistory = getSafeSalesToday('sales_' + today);
+            let rawSalesHistory = getSafeSalesToday('sales_' + today);
+            let salesHistory = processSalesWithBundles(rawSalesHistory);
             if (salesHistory.length === 0) return alert('لا توجد مبيعات لتصديرها!');
             let csvContent = "\uFEFF" + "Item,Qty,Price,Total\n";
             salesHistory.forEach(item => {
-                csvContent += `"${item.name}",${item.qty},${item.price},${item.total}\n`;
+                csvContent += `"${item.name}",${item.qty},${item.price || 0},${item.total}\n`;
             });
             let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             let url = URL.createObjectURL(blob);
@@ -2613,6 +2763,7 @@
         renderDailyReport();
         renderDebts();
         renderSupplyBonsList();
+        renderBundlesList();
     </script>
 </body>
 </html>
