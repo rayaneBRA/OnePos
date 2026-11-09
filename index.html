@@ -373,7 +373,7 @@
     </div>
 
     <!-- Tab 1: البيع واليومية -->
-    <div id="posTab" class="tab-content active">
+    <div id="posTab" class="tab-content">
         <div class="grid-container">
             <div class="card">
                 <h3 style="display:flex; justify-content:space-between; align-items:center;">
@@ -669,9 +669,12 @@
     </div>
 
     <!-- Tab 8: الستوك -->
-    <div id="stockTab" class="tab-content">
+    <div id="stockTab" class="tab-content active">
         <div class="card">
-            <h3>🔍 بحث سريع عن الكمية</h3>
+            <h3 style="display:flex; justify-content:space-between; align-items:center;">
+                <span>🔍 بحث سريع عن الكمية</span>
+                <button class="btn-sm btn-delete" style="padding: 2px 8px; font-size: 11px;" onclick="clearQuickSearch()">🧹 مسح (Clear)</button>
+            </h3>
             <div class="search-box-wrapper">
                 <input type="text" id="stockQuickSearch" placeholder="🔍 اكتب اسم السلعة لمعرفة الكمية فوراً..." autocomplete="off" oninput="quickStockSearch(this.value)">
             </div>
@@ -839,7 +842,7 @@
 
         function parseTimeValue(timeStr) {
             if (!timeStr) return 0;
-            let str = timeStr.toString().replace(/[٠-٩]/g, d => '٠١ي٢٣٤٥٦٧٨٩'.indexOf(d));
+            let str = timeStr.toString().replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
             let isPM = str.includes('م');
             let isAM = str.includes('ص');
             let match = str.match(/(\d+):(\d+)/);
@@ -1039,7 +1042,13 @@
             }
         });
 
-        /* --- زر تفريغ الخانات (Clear Form) --- */
+        /* --- زر تفريغ خانات البحث السريع وإضافة/تعديل السلعة --- */
+        function clearQuickSearch() {
+            document.getElementById('stockQuickSearch').value = '';
+            let res = document.getElementById('stockQuickResult');
+            if (res) res.innerHTML = '';
+        }
+
         function clearProductForm() {
             document.getElementById('pName').value = '';
             document.getElementById('pBuyPrice').value = '';
@@ -2749,7 +2758,7 @@
             if (salesHistory.length === 0) return alert('لا توجد مبيعات لتصديرها!');
             let csvContent = "\uFEFF" + "Item,Qty,Price,Total\n";
             salesHistory.forEach(item => {
-                csvContent += `"${item.name}",${item.qty},${item.price || 0},${item.total}\n`;
+                csvContent += `"${item.name}",{item.qty},${item.price || 0},${item.total}\n`;
             });
             let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             let url = URL.createObjectURL(blob);
@@ -2760,6 +2769,7 @@
         }
 
         updateProductViews();
+        renderDailyResult = renderDailyReport;
         renderDailyReport();
         renderDebts();
         renderSupplyBonsList();
