@@ -60,7 +60,7 @@
         .brand span { color: var(--accent-red); }
         .brand img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; }
 
-        .header-controls { display: flex; gap: 6px; }
+        .header-controls { display: flex; gap: 6px; flex-wrap: wrap; }
 
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -121,11 +121,10 @@
 
         .search-box-wrapper { position: relative; width: 100%; }
         .custom-suggestions {
-            display: none; position: fixed;
+            display: none; position: absolute; top: 100%; left: 0; right: 0;
             background: var(--input-bg); border: 1px solid var(--accent-blue);
-            border-radius: 8px; max-height: 180px; overflow-y: auto; z-index: 99999;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-            left: 0; right: 0;
+            border-radius: 8px; max-height: 180px; overflow-y: auto; z-index: 999;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.4); margin-top: 2px;
         }
         .suggestion-item {
             padding: 8px 12px; border-bottom: 1px solid var(--border-color);
@@ -141,6 +140,9 @@
         body.privacy-mode .privacy-hide { display: none !important; }
         .privacy-show { display: none; }
         body.privacy-mode .privacy-show { display: inline !important; }
+
+        /* ميزة إخفاء الفايدة والتكلفة للزبون */
+        body.profit-hidden .hide-profit-section { display: none !important; }
 
         .btn-sm { width: auto; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer; font-weight: bold; font-size: 12px; background: var(--input-bg); color: var(--text-main); display: inline-flex; align-items: center; gap: 4px; }
         .btn-edit { background: var(--accent-blue); color: #000; border: none; }
@@ -264,6 +266,7 @@
         </div>
         <div class="header-controls">
             <button class="btn-sm" id="privacyToggleBtn" style="background:#374151; color:#fff; border:none;" onclick="togglePrivacyMode()">🙈 إخفاء الأسعار</button>
+            <button class="btn-sm" id="profitToggleBtn" style="background:#4b5563; color:#fff; border:none;" onclick="toggleProfitMode()">🙈 إخفاء الفايدة</button>
             <button class="btn-sm" onclick="toggleSettingsModal()">⚙️ الإعدادات</button>
         </div>
     </div>
@@ -317,14 +320,14 @@
 
             <div style="overflow-x: auto;">
                 <table id="quickCartTable">
-                    <thead><tr><th>#</th><th>السلعة</th><th>الكمية</th><th>الشراء</th><th class="privacy-hide">البيع</th><th class="privacy-hide">المجموع</th><th class="privacy-hide">الفايدة</th><th>حذف</th></tr></thead>
+                    <thead><tr><th>#</th><th>السلعة</th><th>الكمية</th><th class="hide-profit-section">الشراء</th><th class="privacy-hide">البيع</th><th class="privacy-hide">المجموع</th><th class="hide-profit-section privacy-hide">الفايدة</th><th>حذف</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
 
-            <div class="stat-box"><span>إجمالي التكلفة (الشراء):</span><span id="quickCartTotalBuy">0 د.ج</span></div>
+            <div class="stat-box hide-profit-section"><span>إجمالي التكلفة (الشراء):</span><span id="quickCartTotalBuy">0 د.ج</span></div>
             <div class="stat-box privacy-hide"><span>إجمالي البون السريع:</span><span id="quickCartTotal">0 د.ج</span></div>
-            <div class="stat-box profit privacy-hide"><span>إجمالي الفايدة:</span><span id="quickCartTotalProfit">0 د.ج</span></div>
+            <div class="stat-box profit privacy-hide hide-profit-section"><span>إجمالي الفايدة:</span><span id="quickCartTotalProfit">0 د.ج</span></div>
 
             <button class="action-btn" style="background:var(--accent-green); color:#000; margin-top: 10px;" onclick="checkoutQuickBon()">💾 حفظ البون السريع</button>
         </div>
@@ -349,14 +352,14 @@
 
             <div style="overflow-x: auto;">
                 <table id="editCartTable">
-                    <thead><tr><th>#</th><th>السلعة</th><th>الكمية</th><th>الشراء</th><th class="privacy-hide">البيع</th><th class="privacy-hide">المجموع</th><th class="privacy-hide">الفايدة</th><th>حذف</th></tr></thead>
+                    <thead><tr><th>#</th><th>السلعة</th><th>الكمية</th><th class="hide-profit-section">الشراء</th><th class="privacy-hide">البيع</th><th class="privacy-hide">المجموع</th><th class="hide-profit-section privacy-hide">الفايدة</th><th>حذف</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
 
-            <div class="stat-box"><span>إجمالي التكلفة (الشراء):</span><span id="editCartTotalBuy">0 د.ج</span></div>
+            <div class="stat-box hide-profit-section"><span>إجمالي التكلفة (الشراء):</span><span id="editCartTotalBuy">0 د.ج</span></div>
             <div class="stat-box privacy-hide"><span>الإجمالي بعد التعديل:</span><span id="editCartTotal">0 د.ج</span></div>
-            <div class="stat-box profit privacy-hide"><span>إجمالي الفايدة:</span><span id="editCartTotalProfit">0 د.ج</span></div>
+            <div class="stat-box profit privacy-hide hide-profit-section"><span>إجمالي الفايدة:</span><span id="editCartTotalProfit">0 د.ج</span></div>
             <button class="action-btn" style="background:var(--accent-green); color:#000;" onclick="saveEditedBon()">💾 حفظ التعديل</button>
         </div>
     </div>
@@ -398,10 +401,10 @@
                                 <th>#</th>
                                 <th>السلعة</th>
                                 <th>العدد</th>
-                                <th>الشراء</th>
+                                <th class="hide-profit-section">الشراء</th>
                                 <th class="privacy-hide">البيع</th>
                                 <th class="privacy-hide">المجموع</th>
-                                <th class="privacy-hide">الفايدة</th>
+                                <th class="hide-profit-section privacy-hide">الفايدة</th>
                                 <th>إجراء</th>
                             </tr>
                         </thead>
@@ -409,9 +412,9 @@
                     </table>
                 </div>
 
-                <div class="stat-box"><span>إجمالي التكلفة (الشراء):</span><span id="cartTotalBuy">0 د.ج</span></div>
+                <div class="stat-box hide-profit-section"><span>إجمالي التكلفة (الشراء):</span><span id="cartTotalBuy">0 د.ج</span></div>
                 <div class="stat-box privacy-hide"><span>إجمالي المبيعات:</span><span id="cartTotalSell">0 د.ج</span></div>
-                <div class="stat-box profit privacy-hide"><span>إجمالي الفايدة:</span><span id="cartTotalProfit">0 د.ج</span></div>
+                <div class="stat-box profit privacy-hide hide-profit-section"><span>إجمالي الفايدة:</span><span id="cartTotalProfit">0 د.ج</span></div>
 
                 <button class="action-btn" style="background:var(--accent-green); color:#000; margin-top: 10px;" onclick="checkout()">حفظ الـ Bon والتفريغ (مع الخصم التلقائي من الستوك)</button>
             </div>
@@ -428,8 +431,8 @@
                     <tbody></tbody>
                 </table>
                 <div class="stat-box privacy-hide"><span>المبيعات:</span><span id="dailyRevenue">0 د.ج</span></div>
-                <div class="stat-box"><span>التكلفة:</span><span id="dailyCost">0 د.ج</span></div>
-                <div class="stat-box profit privacy-hide"><span>صافي الربح:</span><span id="dailyProfit">0 د.ج</span></div>
+                <div class="stat-box hide-profit-section"><span>التكلفة:</span><span id="dailyCost">0 د.ج</span></div>
+                <div class="stat-box profit privacy-hide hide-profit-section"><span>صافي الربح:</span><span id="dailyProfit">0 د.ج</span></div>
                 
                 <button class="action-btn" style="background: #2563eb;" onclick="exportToCSV()">📥 تصدير تقرير اليوم (CSV)</button>
                 <button class="action-btn" style="background: #eab308; color: #000; margin-top: 6px;" onclick="closeDay()">🔒 إغلاق اليومية وإنهاء اليوم</button>
@@ -507,9 +510,9 @@
             <div class="card">
                 <h3>📈 ملخص وقيمة الستوك</h3>
                 <div class="stat-box"><span>عدد الأنواع:</span><span id="totalItemsCount">0</span></div>
-                <div class="stat-box"><span>تكلفة الشراء:</span><span id="stockTotalBuy">0 د.ج</span></div>
+                <div class="stat-box hide-profit-section"><span>تكلفة الشراء:</span><span id="stockTotalBuy">0 د.ج</span></div>
                 <div class="stat-box privacy-hide"><span>قيمة البيع المتوقعة:</span><span id="stockTotalSell">0 د.ج</span></div>
-                <div class="stat-box profit privacy-hide"><span>الربح المتوقع:</span><span id="stockExpectedProfit">0 د.ج</span></div>
+                <div class="stat-box profit privacy-hide hide-profit-section"><span>الربح المتوقع:</span><span id="stockExpectedProfit">0 د.ج</span></div>
             </div>
 
             <div class="card">
@@ -538,7 +541,7 @@
                 <h3>📋 قائمة المخزون الحالي</h3>
                 <div style="max-height: 350px; overflow-y: auto;">
                     <table id="stockTable">
-                        <thead><tr><th>#</th><th>السلعة</th><th>الستوك</th><th>الشراء</th><th class="privacy-hide">البيع</th><th>إجراء</th></tr></thead>
+                        <thead><tr><th>#</th><th>السلعة</th><th>الستوك</th><th class="hide-profit-section">الشراء</th><th class="privacy-hide">البيع</th><th>إجراء</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
@@ -577,14 +580,14 @@
         <div class="card" id="profitRangeResultCard" style="display: none;">
             <h3 style="color: #eab308;">📊 نتائج الفترة المحددة (<span id="rangeLabel"></span>)</h3>
             <div class="stat-box privacy-hide"><span>إجمالي المبيعات:</span><span id="rangeRevenue">0 د.ج</span></div>
-            <div class="stat-box"><span>إجمالي التكلفة:</span><span id="rangeCost">0 د.ج</span></div>
-            <div class="stat-box profit privacy-hide"><span>صافي الفايدة (الربح):</span><span id="rangeProfit">0 د.ج</span></div>
+            <div class="stat-box hide-profit-section"><span>إجمالي التكلفة:</span><span id="rangeCost">0 د.ج</span></div>
+            <div class="stat-box profit privacy-hide hide-profit-section"><span>صافي الفايدة (الربح):</span><span id="rangeProfit">0 د.ج</span></div>
             <div class="stat-box"><span>إجمالي عدد البونات:</span><span id="rangeBonsCount">0</span></div>
             
             <h4 style="color: var(--accent-blue); margin: 12px 0 6px 0; font-size: 13px;">📦 تفصيل السلع المباعة خلال الفترة:</h4>
             <div style="max-height: 250px; overflow-y: auto;">
                 <table id="rangeItemsTable">
-                    <thead><tr><th>#</th><th>السلعة</th><th>الكمية المباعة</th><th class="privacy-hide">الإجمالي</th><th class="privacy-hide">الفايدة</th></tr></thead>
+                    <thead><tr><th>#</th><th>السلعة</th><th>الكمية المباعة</th><th class="privacy-hide">الإجمالي</th><th class="hide-profit-section privacy-hide">الفايدة</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
@@ -629,7 +632,7 @@
                 
                 <hr style="border-color: var(--border-color); margin: 10px 0;">
                 <div class="stat-box privacy-hide"><span>إجمالي الديون المعلقة:</span><span id="debtTotalSell">0 د.ج</span></div>
-                <div class="stat-box profit privacy-hide"><span>إجمالي الفايدة المعلقة:</span><span id="debtTotalProfit">0 د.ج</span></div>
+                <div class="stat-box profit privacy-hide hide-profit-section"><span>إجمالي الفايدة المعلقة:</span><span id="debtTotalProfit">0 د.ج</span></div>
             </div>
         </div>
     </div>
@@ -704,11 +707,11 @@
                 <button class="action-btn" style="background: #f59e0b; color: #000;" onclick="addToCheckList()">+ إضافة للقائمة</button>
                 <div style="max-height: 150px; overflow-y: auto; margin-top: 6px;">
                     <table id="checkListTable">
-                        <thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th>التكلفة</th><th>إجراء</th></tr></thead>
+                        <thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th class="hide-profit-section">التكلفة</th><th>إجراء</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
-                <div class="stat-box"><span>إجمالي التكلفة:</span><span id="checkListTotalCost">0 د.ج</span></div>
+                <div class="stat-box hide-profit-section"><span>إجمالي التكلفة:</span><span id="checkListTotalCost">0 د.ج</span></div>
                 <button class="action-btn" style="background: #4b5563; color: white; padding: 6px; font-size: 11px;" onclick="clearCheckList()">مسح القائمة</button>
             </div>
 
@@ -720,7 +723,7 @@
                 </div>
                 <div style="display: flex; gap: 4px; margin-top: 4px;">
                     <input type="number" id="calcQty" value="1" placeholder="الكمية">
-                    <input type="number" id="calcBuyPrice" placeholder="شراء">
+                    <input type="number" id="calcBuyPrice" placeholder="شراء" class="hide-profit-section">
                     <input type="number" id="calcSellPrice" placeholder="بيع">
                 </div>
                 <button class="action-btn" style="background: var(--accent-purple); color: #fff;" onclick="addToCalc()">+ إضافة للحاسبة</button>
@@ -927,6 +930,23 @@
 
         applyPrivacyMode();
 
+        /* --- تفعيل إخفاء الفايدة والتكلفة --- */
+        let profitHidden = localStorage.getItem('profitHidden') === 'true';
+
+        function applyProfitMode() {
+            document.body.classList.toggle('profit-hidden', profitHidden);
+            let btn = document.getElementById('profitToggleBtn');
+            if (btn) btn.innerText = profitHidden ? '👁️ إظهار الفايدة' : '🙈 إخفاء الفايدة';
+        }
+
+        function toggleProfitMode() {
+            profitHidden = !profitHidden;
+            localStorage.setItem('profitHidden', profitHidden);
+            applyProfitMode();
+        }
+
+        applyProfitMode();
+
         function hideSplash() {
             let splash = document.getElementById('splashScreen');
             if (!splash) return;
@@ -958,6 +978,7 @@
             renderBoxLinksList();
             renderCheckListUI();
             renderCalcUI();
+            renderDebts();
         }
 
         function toggleSettingsModal() {
@@ -1016,18 +1037,6 @@
             }
         }
 
-        document.querySelectorAll('.custom-suggestions').forEach(box => {
-            document.body.appendChild(box);
-        });
-
-        function positionSuggestionsBox(suggestionsBox, inputEl) {
-            if (!inputEl) return;
-            let rect = inputEl.getBoundingClientRect();
-            suggestionsBox.style.top = (rect.bottom + 2) + 'px';
-            suggestionsBox.style.left = rect.left + 'px';
-            suggestionsBox.style.width = rect.width + 'px';
-        }
-
         function filterProducts(type, query) {
             let suggestionsBox = document.getElementById(type + 'Suggestions');
             if (!suggestionsBox) return;
@@ -1051,8 +1060,6 @@
             else if (type === 'boxLinkItem') searchInputId = 'boxLinkItemSearch';
             else if (type === 'boxLinkParent') searchInputId = 'boxLinkParentSearch';
             else searchInputId = type + 'ProductSearch';
-
-            positionSuggestionsBox(suggestionsBox, document.getElementById(searchInputId));
 
             matches.forEach(name => {
                 let p = products[name];
@@ -1149,7 +1156,6 @@
                 }
             }
 
-            // تضمين اليوم الحالي (إذا كان ضمن النطاق)
             if (today >= start && today <= end) {
                 let todaySales = getSafeSalesToday('sales_' + today);
                 let todayBons = getSafeStorageToday('bons_' + today);
@@ -1189,7 +1195,7 @@
                     <td><b>${name}</b></td>
                     <td>${s.qty}</td>
                     <td class="privacy-hide">${s.revenue} د.ج</td>
-                    <td class="privacy-hide" style="color:var(--accent-green); font-weight:bold;">${profit} د.ج</td>
+                    <td class="hide-profit-section privacy-hide" style="color:var(--accent-green); font-weight:bold;">${profit} د.ج</td>
                 </tr>`;
             }
 
@@ -1503,7 +1509,7 @@
                     <td class="num-col">${stockIdx}</td>
                     <td><b>${name}</b>${linkInfo}</td>
                     <td><span class="badge ${p.stock < 0 ? 'badge-warning':''}">${p.stock}</span></td>
-                    <td>${p.buy}</td><td class="privacy-hide">${p.sell}</td>
+                    <td class="hide-profit-section">${p.buy}</td><td class="privacy-hide">${p.sell}</td>
                     <td>
                         <button class="btn-sm btn-edit" onclick="editProduct('${name}')">تعديل</button>
                         <button class="btn-sm btn-delete" onclick="deleteProduct('${name}')">X</button>
@@ -1541,7 +1547,6 @@
             if (!query.trim()) { suggestionsBox.style.display = 'none'; return; }
             let matches = Object.keys(products).filter(name => name.toLowerCase().includes(query.toLowerCase()));
             if (matches.length === 0) { suggestionsBox.style.display = 'none'; return; }
-            positionSuggestionsBox(suggestionsBox, document.getElementById('pName'));
             matches.forEach(name => {
                 let p = products[name];
                 let div = document.createElement('div');
@@ -1640,10 +1645,10 @@
                     <td><b>${index + 1}</b></td>
                     <td><b>${item.name}</b></td>
                     <td><input type="number" class="qty-input" value="${item.qty}" min="1" onchange="updateCartQty(${index}, this.value)"></td>
-                    <td>${item.totalCost}</td>
+                    <td class="hide-profit-section">${item.totalCost}</td>
                     <td class="privacy-hide">${item.price}</td>
                     <td class="privacy-hide"><b>${item.total}</b></td>
-                    <td class="privacy-hide" style="color:var(--accent-green); font-weight:bold;">${item.profit}</td>
+                    <td class="hide-profit-section privacy-hide" style="color:var(--accent-green); font-weight:bold;">${item.profit}</td>
                     <td><button class="btn-sm btn-delete" onclick="cart.splice(${index},1);updateCartUI();">X</button></td>
                 </tr>`;
             });
@@ -1801,7 +1806,7 @@
                     <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleHistoryDayAccordion('${dateStr}', this)">
                         <div>
                             <span style="font-weight:bold; color:var(--accent-blue);">📅 ${dateStr}</span>
-                            <div style="font-size:11px; color:#eab308; font-weight:bold;">التكلفة: ${cost} د.ج</div>
+                            <div class="hide-profit-section" style="font-size:11px; color:#eab308; font-weight:bold;">التكلفة: ${cost} د.ج</div>
                         </div>
                         <div style="display:flex; gap:6px; align-items:center;">
                             <button class="btn-sm btn-delete" style="padding:2px 6px;" onclick="event.stopPropagation(); deleteArchivedDay('${dateStr}')">🗑️</button>
@@ -1845,8 +1850,8 @@
 
             containerEl.innerHTML = `
                 <div class="stat-box privacy-hide"><span>المبيعات:</span><span>${totalRevenue} د.ج</span></div>
-                <div class="stat-box"><span>التكلفة:</span><span>${totalCost} د.ج</span></div>
-                <div class="stat-box profit privacy-hide"><span>صافي الربح:</span><span>${netProfit} د.ج</span></div>
+                <div class="stat-box hide-profit-section"><span>التكلفة:</span><span>${totalCost} د.ج</span></div>
+                <div class="stat-box profit privacy-hide hide-profit-section"><span>صافي الربح:</span><span>${netProfit} د.ج</span></div>
                 <h4 style="color:var(--accent-blue); margin:10px 0 4px 0; font-size:12px;">🧾 البونات:</h4>
                 <div style="max-height:200px; overflow-y:auto;">${bonsHtml || 'لا توجد بونات'}</div>`;
         }
@@ -1912,47 +1917,74 @@
             if (!container) return;
             debts = getSafeJSON('debts', []);
             container.innerHTML = debts.length === 0 ? `<p style="text-align:center;color:#888;">لا توجد ديون</p>` : '';
-            let totalSell = 0;
+            let totalSell = 0, totalProfit = 0;
             debts.forEach((d, index) => {
                 totalSell += d.totalSell;
-                container.innerHTML += `<div class="bon-card"><div style="display:flex; justify-content:space-between; font-weight:bold;"><span style="color:var(--accent-blue);">${d.customer}</span><span style="color:#eab308;">${d.totalSell} د.ج</span></div><button class="btn-sm btn-edit" style="margin-top:6px; background:var(--accent-green); color:#000;" onclick="completeDebtPayment(${index})">✔ تسديد</button></div>`;
+                let dProfit = d.totalSell - (d.totalBuy || 0);
+                totalProfit += dProfit;
+
+                let itemsList = (d.items || []).map(i => `${i.name} (${i.qty}×${i.price})`).join(' ، ');
+
+                container.innerHTML += `
+                    <div class="bon-card">
+                        <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                            <span style="color:var(--accent-blue);">${d.customer} <small style="color:#aaa;">[${d.date}]</small></span>
+                            <span class="privacy-hide" style="color:#eab308; font-size:14px;">${d.totalSell} د.ج</span>
+                        </div>
+                        <div class="privacy-hide" style="font-size:11px; color:#aaa; margin:4px 0;">السلع: ${itemsList}</div>
+                        <button class="btn-sm btn-edit" style="margin-top:6px; background:var(--accent-green); color:#000; width:100%; justify-content:center;" onclick="completeDebtPayment(${index})">✔ تسديد وتسجيل المبيعات</button>
+                        <button class="btn-sm btn-delete" style="margin-top:4px; width:100%; justify-content:center;" onclick="deleteDebt(${index})">🗑️ حذف</button>
+                    </div>`;
             });
             document.getElementById('debtTotalSell').innerText = `${totalSell} د.ج`;
+            document.getElementById('debtTotalProfit').innerText = `${totalProfit} د.ج`;
+        }
+
+        function deleteDebt(index) {
+            let d = debts[index];
+            if (!d) return;
+            if (confirm(`حذف دين ${d.customer} نهائياً؟`)) {
+                debts.splice(index, 1);
+                localStorage.setItem('debts', JSON.stringify(debts));
+                renderDebts();
+            }
         }
 
         function completeDebtPayment(index) {
             let d = debts[index];
             if (!d) return;
-            if (confirm(`تأكيد سداد دين الزبون (${d.customer})؟`)) {
-                let salesHistory = getSafeSalesToday('sales_' + today);
-                let bonsHistory = getSafeStorageToday('bons_' + today);
-                let time = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
-                let debtItemsFormatted = [];
-                let bonTotalCost = 0, bonTotalSell = 0, bonTotalProfit = 0;
+            let shouldDeductStock = confirm(`تأكيد سداد الدين للزبون (${d.customer})؟\n\nاضغط [موافق] إذا أردت خصم الستوك.\nاضغط [إلغاء] لحفظ المبيعات بدون خصم الستوك.`);
 
-                d.items.forEach(item => {
-                    let bPrice = item.buyPrice || 0;
-                    let itemTotal = item.total;
-                    let itemTotalCost = item.qty * bPrice;
-                    let itemProfit = itemTotal - itemTotalCost;
-                    let saleItem = { name: item.name, qty: item.qty, price: item.price, buyPrice: bPrice, totalCost: itemTotalCost, total: itemTotal, profit: itemProfit };
-                    salesHistory.push(saleItem);
-                    debtItemsFormatted.push(saleItem);
-                    bonTotalCost += itemTotalCost;
-                    bonTotalSell += itemTotal;
-                    bonTotalProfit += itemProfit;
-                });
-                let debtBon = { id: 0, time, items: debtItemsFormatted, total: bonTotalSell, totalCost: bonTotalCost, profit: bonTotalProfit, isDebtPayment: true, customer: d.customer };
-                bonsHistory.push(debtBon);
-                bonsHistory = normalizeBons(bonsHistory);
-                localStorage.setItem('sales_' + today, JSON.stringify(salesHistory));
-                setSafeStorageToday('bons_' + today, bonsHistory);
-                debts.splice(index, 1);
-                localStorage.setItem('debts', JSON.stringify(debts));
-                renderDebts();
-                renderDailyReport();
-                alert('تم تسجيل السداد بنجاح!');
-            }
+            let salesHistory = getSafeSalesToday('sales_' + today);
+            let bonsHistory = getSafeStorageToday('bons_' + today);
+            let time = new Date().toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit' });
+            let debtItemsFormatted = [];
+            let bonTotalCost = 0, bonTotalSell = 0, bonTotalProfit = 0;
+
+            d.items.forEach(item => {
+                let bPrice = item.buyPrice || 0;
+                let itemTotal = item.total;
+                let itemTotalCost = item.qty * bPrice;
+                let itemProfit = itemTotal - itemTotalCost;
+                let saleItem = { name: item.name, qty: item.qty, price: item.price, buyPrice: bPrice, totalCost: itemTotalCost, total: itemTotal, profit: itemProfit };
+                salesHistory.push(saleItem);
+                debtItemsFormatted.push(saleItem);
+                bonTotalCost += itemTotalCost;
+                bonTotalSell += itemTotal;
+                bonTotalProfit += itemProfit;
+                if (shouldDeductStock) deductStockWithUnboxing(item.name, item.qty);
+            });
+            let debtBon = { id: 0, time, items: debtItemsFormatted, total: bonTotalSell, totalCost: bonTotalCost, profit: bonTotalProfit, isDebtPayment: true, customer: d.customer };
+            bonsHistory.push(debtBon);
+            bonsHistory = normalizeBons(bonsHistory);
+            if (shouldDeductStock) { localStorage.setItem('products', JSON.stringify(products)); updateProductViews(); }
+            localStorage.setItem('sales_' + today, JSON.stringify(salesHistory));
+            setSafeStorageToday('bons_' + today, bonsHistory);
+            debts.splice(index, 1);
+            localStorage.setItem('debts', JSON.stringify(debts));
+            renderDebts();
+            renderDailyReport();
+            alert('تم تسجيل السداد بنجاح!');
         }
 
         function addToCheckList() {
@@ -1974,7 +2006,7 @@
                 let unitCost = products[item.name] ? products[item.name].buy : 0;
                 let lineCost = unitCost * item.qty;
                 totalCost += lineCost;
-                tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td>${lineCost}</td><td><button class="btn-sm btn-delete" onclick="checkListItems.splice(${index},1); localStorage.setItem('checkListItems', JSON.stringify(checkListItems)); renderCheckListUI();">X</button></td></tr>`;
+                tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td class="hide-profit-section">${lineCost}</td><td><button class="btn-sm btn-delete" onclick="checkListItems.splice(${index},1); localStorage.setItem('checkListItems', JSON.stringify(checkListItems)); renderCheckListUI();">X</button></td></tr>`;
             });
             document.getElementById('checkListTotalCost').innerText = `${totalCost} د.ج`;
         }
@@ -2051,7 +2083,7 @@
             let total = 0, totalBuy = 0, totalProfit = 0;
             quickCart.forEach((item, index) => {
                 total += item.total; totalBuy += item.totalCost; totalProfit += item.profit;
-                tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td>${item.totalCost}</td><td class="privacy-hide">${item.price}</td><td class="privacy-hide"><b>${item.total}</b></td><td><button class="btn-sm btn-delete" onclick="quickCart.splice(${index},1); renderQuickCartUI();">X</button></td></tr>`;
+                tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td class="hide-profit-section">${item.totalCost}</td><td class="privacy-hide">${item.price}</td><td class="privacy-hide"><b>${item.total}</b></td><td class="hide-profit-section privacy-hide">${item.profit}</td><td><button class="btn-sm btn-delete" onclick="quickCart.splice(${index},1); renderQuickCartUI();">X</button></td></tr>`;
             });
             document.getElementById('quickCartTotalBuy').innerText = `${totalBuy} د.ج`;
             document.getElementById('quickCartTotal').innerText = `${total} د.ج`;
@@ -2114,7 +2146,7 @@
             let total = 0, totalBuy = 0;
             editCart.forEach((item, index) => {
                 total += item.total; totalBuy += item.totalCost;
-                tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td>${item.totalCost}</td><td class="privacy-hide">${item.price}</td><td class="privacy-hide"><b>${item.total}</b></td><td><button class="btn-sm btn-delete" onclick="editCart.splice(${index},1); renderEditCartUI();">X</button></td></tr>`;
+                tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td class="hide-profit-section">${item.totalCost}</td><td class="privacy-hide">${item.price}</td><td class="privacy-hide"><b>${item.total}</b></td><td class="hide-profit-section privacy-hide">${item.profit}</td><td><button class="btn-sm btn-delete" onclick="editCart.splice(${index},1); renderEditCartUI();">X</button></td></tr>`;
             });
             document.getElementById('editCartTotalBuy').innerText = `${totalBuy} د.ج`;
             document.getElementById('editCartTotal').innerText = `${total} د.ج`;
