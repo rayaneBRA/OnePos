@@ -360,17 +360,17 @@
         </div>
     </div>
 
+    <!-- الشريط العلوي المُعاد تراتيبه وتسمياته -->
     <div class="nav-tabs">
-        <div class="tab-btn active" onclick="switchTab('posTab', this)">🛒 البيع واليومية</div>
-        <div class="tab-btn" onclick="switchTab('supplyTab', this)" style="border-color: var(--accent-green);">🚚 مشتروات وبضاعة</div>
+        <div class="tab-btn active" onclick="switchTab('posTab', this)">🛒 فاتورة</div>
         <div class="tab-btn" onclick="switchTab('stockTab', this)">📦 الستوك</div>
-        <div class="tab-btn" onclick="switchTab('historyTab', this)">📜 أرشيف الأيام</div>
-        <div class="tab-btn" onclick="switchTab('profitRangeTab', this)" style="border-color: #eab308;">📈 أرباح فترة</div>
+        <div class="tab-btn" onclick="switchTab('historyTab', this)">📜 المبيعات</div>
         <div class="tab-btn" onclick="switchTab('debtTab', this)">📝 الديون</div>
-        <div class="tab-btn" onclick="switchTab('toolsTab', this)" style="border-color: var(--accent-purple);">🛠️ الخدمات والربط</div>
+        <div class="tab-btn" onclick="switchTab('checkListTab', this)">📋 المراجعة</div>
+        <div class="tab-btn" onclick="switchTab('toolsTab', this)" style="border-color: var(--accent-purple);">🛠️ أخرى</div>
     </div>
 
-    <!-- Tab 1: البيع واليومية -->
+    <!-- Tab 1: فاتورة (البيع واليومية سابقاً) -->
     <div id="posTab" class="tab-content active">
         <div class="grid-container">
             <div class="card">
@@ -436,60 +436,7 @@
         </div>
     </div>
 
-    <!-- Tab 2: بون المشتروات والبضاعة الجديدة -->
-    <div id="supplyTab" class="tab-content">
-        <div class="grid-container">
-            <div class="card">
-                <h3 style="color: var(--accent-green);">🚚 تسجيل بون بضاعة جديدة (وارد الشاحنة)</h3>
-                <input type="text" id="supplySupplierName" placeholder="اسم المورد / الشاحنة / رقم الفاتورة (اختياري)">
-                
-                <div class="search-box-wrapper">
-                    <input type="text" id="supplyProductSearch" placeholder="🔍 ابحث أو اكتب اسم السلعة الجديدة..." autocomplete="off" oninput="filterProducts('supply', this.value)">
-                    <div id="supplySuggestions" class="custom-suggestions"></div>
-                </div>
-
-                <div style="display: flex; gap: 5px; margin-top: 4px;">
-                    <input type="number" id="supplyQty" value="1" placeholder="الكمية الواردة">
-                    <input type="number" id="supplyBuyPrice" placeholder="سعر الشراء (التكلفة للقطعة)">
-                </div>
-                <button class="action-btn" style="background: var(--accent-green); color: #000;" onclick="addToSupplyCart()">+ إضافة لبون المشتريات</button>
-
-                <div style="overflow-x: auto; margin-top: 10px;">
-                    <table id="supplyCartTable">
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>السلعة</th>
-                                <th>الكمية الواردة</th>
-                                <th>تكلفتها</th>
-                                <th>إجمالي التكلفة</th>
-                                <th>إجراء</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-
-                <div class="stat-box"><span>إجمالي تكلفة البضاعة الجديدة:</span><span id="supplyCartTotal">0 د.ج</span></div>
-
-                <div style="margin: 10px 0; background: var(--input-bg); padding: 10px; border-radius: 8px; border: 1px dashed var(--accent-green);">
-                    <label style="cursor: pointer; font-weight: bold; color: var(--accent-green); font-size: 13px;">
-                        <input type="checkbox" id="supplyAddToStock" checked style="width: auto; margin-left: 6px;"> ➕ إضافة تراكمية لهذه السلع الجديدة فوق الستوك الحالي؟
-                    </label>
-                    <p style="font-size: 11px; color: #aaa; margin: 4px 0 0 0;">(تزداد الكميات فوق القديم تلقائياً دون حذف الرقم المكتوب سابقاً بالستوك)</p>
-                </div>
-
-                <button class="action-btn" style="background: var(--accent-green); color: #000;" onclick="saveSupplyBon()">💾 حفظ بون المشتريات</button>
-            </div>
-
-            <div class="card">
-                <h3 style="color: var(--accent-green);">📜 سجل بونات المشتروات والبضاعة الجديدة</h3>
-                <div id="supplyBonsList" style="max-height: 450px; overflow-y: auto;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tab 3: الستوك -->
+    <!-- Tab 2: الستوك -->
     <div id="stockTab" class="tab-content">
         <div class="grid-container">
             <div class="card">
@@ -545,52 +492,15 @@
         </div>
     </div>
 
-    <!-- Tab 4: أرشيف الأيام -->
+    <!-- Tab 3: المبيعات (أرشيف الأيام سابقاً) -->
     <div id="historyTab" class="tab-content">
         <div class="card">
-            <h3>📅 الأيام المؤرشفة تلقائياً</h3>
+            <h3>📅 الأيام المؤرشفة والمبيعات السابقة</h3>
             <div id="historyDaysContainer"></div>
         </div>
     </div>
 
-    <!-- Tab 5: أرباح وفائدة فترة محددة -->
-    <div id="profitRangeTab" class="tab-content">
-        <div class="card">
-            <h3 style="color: #eab308;">📈 حساب الفايدة والأرباح بين تاريخين</h3>
-            <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">حدد تاريخ البداية وتاريخ النهاية لمعرفة إجمالي المبيعات، التكلفة،صافي الفايدة وعدد البونات خلال تلك الفترة:</p>
-            
-            <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-                <div style="flex: 1;">
-                    <label style="font-size: 11px; color: #aaa; display: block;">من تاريخ:</label>
-                    <input type="date" id="profitStartDate">
-                </div>
-                <div style="flex: 1;">
-                    <label style="font-size: 11px; color: #aaa; display: block;">إلى تاريخ:</label>
-                    <input type="date" id="profitEndDate">
-                </div>
-            </div>
-            
-            <button class="action-btn" style="background: #eab308; color: #000;" onclick="calculateProfitRange()">🔍 حساب أرباح الفتره</button>
-        </div>
-
-        <div class="card" id="profitRangeResultCard" style="display: none;">
-            <h3 style="color: #eab308;">📊 نتائج الفترة المحددة (<span id="rangeLabel"></span>)</h3>
-            <div class="stat-box privacy-hide"><span>إجمالي المبيعات:</span><span id="rangeRevenue">0 د.ج</span></div>
-            <div class="stat-box hide-profit-section"><span>إجمالي التكلفة:</span><span id="rangeCost">0 د.ج</span></div>
-            <div class="stat-box profit privacy-hide hide-profit-section"><span>صافي الفايدة (الربح):</span><span id="rangeProfit">0 د.ج</span></div>
-            <div class="stat-box"><span>إجمالي عدد البونات:</span><span id="rangeBonsCount">0</span></div>
-            
-            <h4 style="color: var(--accent-blue); margin: 12px 0 6px 0; font-size: 13px;">📦 تفصيل السلع المباعة خلال الفترة:</h4>
-            <div style="max-height: 250px; overflow-y: auto;">
-                <table id="rangeItemsTable">
-                    <thead><tr><th>#</th><th>السلعة</th><th>الكمية المباعة</th><th class="privacy-hide">الإجمالي</th><th class="hide-profit-section privacy-hide">الفايدة</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Tab 6: الديون -->
+    <!-- Tab 4: الديون -->
     <div id="debtTab" class="tab-content">
         <div class="grid-container">
             <div class="card">
@@ -633,9 +543,110 @@
         </div>
     </div>
 
-    <!-- Tab 7: الخدمات والربط والأدوات -->
+    <!-- Tab 5: المراجعة (قائمة المراجعة سابقاً) -->
+    <div id="checkListTab" class="tab-content">
+        <div class="card">
+            <h3 style="color: #f59e0b;">📋 قائمة المراجعة</h3>
+            <div style="display: flex; gap: 5px;">
+                <div class="search-box-wrapper" style="flex:1;">
+                    <input type="text" id="checkProductSearch" placeholder="🔍 ابحث عن سلعة..." autocomplete="off" oninput="filterProducts('check', this.value)">
+                    <div id="checkSuggestions" class="custom-suggestions"></div>
+                </div>
+                <input type="number" id="checkQty" value="1" placeholder="العدد" style="width: 70px;">
+            </div>
+            <button class="action-btn" style="background: #f59e0b; color: #000;" onclick="addToCheckList()">+ إضافة للقائمة</button>
+            <div style="max-height: 250px; overflow-y: auto; margin-top: 6px;">
+                <table id="checkListTable">
+                    <thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th class="hide-profit-section">التكلفة</th><th>إجراء</th></tr></thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="stat-box hide-profit-section" style="margin-top: 10px;"><span>إجمالي التكلفة:</span><span id="checkListTotalCost">0 د.ج</span></div>
+            <button class="action-btn" style="background: #4b5563; color: white; padding: 8px; font-size: 12px; margin-top: 10px;" onclick="clearCheckList()">مسح القائمة</button>
+        </div>
+    </div>
+
+    <!-- Tab 6: أخرى (الخدمات والربط وبضاعة وشاحنة وأرباح فترة) -->
     <div id="toolsTab" class="tab-content">
         <div class="grid-container">
+            <!-- أرباح فترة المنقولة حديثاً مع زر Reset -->
+            <div class="card">
+                <h3 style="color: #eab308;">📈 حساب الفايدة والأرباح بين تاريخين</h3>
+                <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">حدد تاريخ البداية وتاريخ النهاية لمعرفة إجمالي المبيعات، التكلفة، صافي الفايدة وعدد البونات:</p>
+                
+                <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; color: #aaa; display: block;">من تاريخ:</label>
+                        <input type="date" id="profitStartDate">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="font-size: 11px; color: #aaa; display: block;">إلى تاريخ:</label>
+                        <input type="date" id="profitEndDate">
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 6px;">
+                    <button class="action-btn" style="background: #eab308; color: #000; flex: 2; margin:0;" onclick="calculateProfitRange()">🔍 حساب أرباح الفترة</button>
+                    <button class="action-btn" style="background: #4b5563; color: #fff; flex: 1; margin:0;" onclick="resetProfitRangeDates()">🔄 Reset</button>
+                </div>
+            </div>
+
+            <div class="card" id="profitRangeResultCard" style="display: none; grid-column: 1 / -1;">
+                <h3 style="color: #eab308;">📊 نتائج الفترة المحددة (<span id="rangeLabel"></span>)</h3>
+                <div class="stat-box privacy-hide"><span>إجمالي المبيعات:</span><span id="rangeRevenue">0 د.ج</span></div>
+                <div class="stat-box hide-profit-section"><span>إجمالي التكلفة:</span><span id="rangeCost">0 د.ج</span></div>
+                <div class="stat-box profit privacy-hide hide-profit-section"><span>صافي الفايدة (الربح):</span><span id="rangeProfit">0 د.ج</span></div>
+                <div class="stat-box"><span>إجمالي عدد البونات:</span><span id="rangeBonsCount">0</span></div>
+                
+                <h4 style="color: var(--accent-blue); margin: 12px 0 6px 0; font-size: 13px;">📦 تفصيل السلع المباعة خلال الفترة:</h4>
+                <div style="max-height: 250px; overflow-y: auto;">
+                    <table id="rangeItemsTable">
+                        <thead><tr><th>#</th><th>السلعة</th><th>الكمية المباعة</th><th class="privacy-hide">الإجمالي</th><th class="hide-profit-section privacy-hide">الفايدة</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- بون المشتروات والبضاعة -->
+            <div class="card">
+                <h3 style="color: var(--accent-green);">🚚 تسجيل بون بضاعة جديدة (وارد الشاحنة)</h3>
+                <input type="text" id="supplySupplierName" placeholder="اسم المورد / الشاحنة / رقم الفاتورة (اختياري)">
+                
+                <div class="search-box-wrapper">
+                    <input type="text" id="supplyProductSearch" placeholder="🔍 ابحث أو اكتب اسم السلعة الجديدة..." autocomplete="off" oninput="filterProducts('supply', this.value)">
+                    <div id="supplySuggestions" class="custom-suggestions"></div>
+                </div>
+
+                <div style="display: flex; gap: 5px; margin-top: 4px;">
+                    <input type="number" id="supplyQty" value="1" placeholder="الكمية الواردة">
+                    <input type="number" id="supplyBuyPrice" placeholder="سعر الشراء (التكلفة)">
+                </div>
+                <button class="action-btn" style="background: var(--accent-green); color: #000;" onclick="addToSupplyCart()">+ إضافة لبون المشتريات</button>
+
+                <div style="overflow-x: auto; margin-top: 10px;">
+                    <table id="supplyCartTable">
+                        <thead><tr><th>#</th><th>السلعة</th><th>الكمية</th><th>التكلفة</th><th>المجموع</th><th>إجراء</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+
+                <div class="stat-box"><span>إجمالي تكلفة الشحنة:</span><span id="supplyCartTotal">0 د.ج</span></div>
+
+                <div style="margin: 10px 0; background: var(--input-bg); padding: 10px; border-radius: 8px; border: 1px dashed var(--accent-green);">
+                    <label style="cursor: pointer; font-weight: bold; color: var(--accent-green); font-size: 13px;">
+                        <input type="checkbox" id="supplyAddToStock" checked style="width: auto; margin-left: 6px;"> ➕ إضافة تراكمية فوق الستوك الحالي؟
+                    </label>
+                </div>
+
+                <button class="action-btn" style="background: var(--accent-green); color: #000;" onclick="saveSupplyBon()">💾 حفظ بون المشتريات</button>
+            </div>
+
+            <div class="card">
+                <h3 style="color: var(--accent-green);">📜 سجل بونات المشتروات</h3>
+                <div id="supplyBonsList" style="max-height: 350px; overflow-y: auto;"></div>
+            </div>
+
+            <!-- ربط دمج المبيعات -->
             <div class="card">
                 <h3 style="color: var(--accent-purple);">🔗 ربط دمج المبيعات</h3>
                 <p style="font-size: 11.5px; color: #aaa; margin-bottom: 8px;">ربط سلعتين لتظهرا كسلعة واحدة في التقارير والمبيعات.</p>
@@ -664,6 +675,7 @@
                 <div id="bundlesList"></div>
             </div>
 
+            <!-- ربط بالعلبة الكبيرة -->
             <div class="card">
                 <h3 style="color: var(--accent-blue);">📦 ربط بالعلبة الكبيرة (الفتح التلقائي)</h3>
                 <p style="font-size: 11.5px; color: #aaa; margin-bottom: 8px;">اربط العلبة الفردية بالصندوق الكبير ليتم الخصم التلقائي.</p>
@@ -690,81 +702,6 @@
                 <h3 style="margin-top: 15px; color: var(--accent-blue); font-size:13px;">📋 السلع المربوطة بالعلب</h3>
                 <div id="boxLinksList"></div>
             </div>
-
-            <div class="card">
-                <h3 style="color: #f59e0b;">📋 قائمة المراجعة</h3>
-                <div style="display: flex; gap: 5px;">
-                    <div class="search-box-wrapper" style="flex:1;">
-                        <input type="text" id="checkProductSearch" placeholder="🔍 ابحث عن سلعة..." autocomplete="off" oninput="filterProducts('check', this.value)">
-                        <div id="checkSuggestions" class="custom-suggestions"></div>
-                    </div>
-                    <input type="number" id="checkQty" value="1" placeholder="العدد" style="width: 70px;">
-                </div>
-                <button class="action-btn" style="background: #f59e0b; color: #000;" onclick="addToCheckList()">+ إضافة للقائمة</button>
-                <div style="max-height: 150px; overflow-y: auto; margin-top: 6px;">
-                    <table id="checkListTable">
-                        <thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th class="hide-profit-section">التكلفة</th><th>إجراء</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-                <div class="stat-box hide-profit-section"><span>إجمالي التكلفة:</span><span id="checkListTotalCost">0 د.ج</span></div>
-                <button class="action-btn" style="background: #4b5563; color: white; padding: 6px; font-size: 11px;" onclick="clearCheckList()">مسح القائمة</button>
-            </div>
-
-            <div class="card">
-                <h3 style="color: var(--accent-purple);">🧮 الحاسبة المؤقتة</h3>
-                <div class="search-box-wrapper">
-                    <input type="text" id="calcProductSearch" placeholder="🔍 ابحث عن سلعة..." autocomplete="off" oninput="filterProducts('calc', this.value)">
-                    <div id="calcSuggestions" class="custom-suggestions"></div>
-                </div>
-                <div style="display: flex; gap: 4px; margin-top: 4px;">
-                    <input type="number" id="calcQty" value="1" placeholder="الكمية">
-                    <input type="number" id="calcBuyPrice" placeholder="شراء" class="hide-profit-section">
-                    <input type="number" id="calcSellPrice" placeholder="بيع">
-                </div>
-                <button class="action-btn" style="background: var(--accent-purple); color: #fff;" onclick="addToCalc()">+ إضافة للحاسبة</button>
-                <div style="max-height: 120px; overflow-y: auto; margin-top: 6px;">
-                    <table id="calcTable">
-                        <thead><tr><th>#</th><th>سلعة</th><th>عدد</th><th class="privacy-hide">بيع</th><th>إجراء</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-                <div class="stat-box privacy-hide"><span>إجمالي البيع:</span><span id="calcTotalSell">0 د.ج</span></div>
-                <button class="action-btn" style="background: #4b5563; color: white; padding: 6px; font-size: 11px;" onclick="clearCalc()">تفريغ الحاسبة</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="addHistoryBonModal" class="modal-overlay" onclick="closeHistoryBonModalOutside(event)">
-        <div class="modal-content">
-            <div class="modal-header">
-                <span>➕ إضافة بون منسي لتاريخ: <span id="modalTargetDate"></span></span>
-                <button class="btn-sm" style="width: auto; padding: 2px 8px;" onclick="closeHistoryBonModal()">✕</button>
-            </div>
-            
-            <div class="search-box-wrapper" style="margin-bottom: 6px;">
-                <input type="text" id="histBonProductSearch" placeholder="🔍 ابحث عن السلعة..." autocomplete="off" oninput="filterProducts('histBon', this.value)">
-                <div id="histBonSuggestions" class="custom-suggestions"></div>
-            </div>
-
-            <div style="display: flex; gap: 5px; margin-bottom: 6px;">
-                <input type="number" id="histBonQty" value="1" placeholder="العدد">
-                <input type="number" id="histBonPrice" placeholder="سعر البيع للقطعة">
-            </div>
-            <button class="action-btn" style="background: var(--accent-blue);" onclick="addHistBonItemTemp()">+ إضافة سلعة للبون المؤقت</button>
-
-            <div style="max-height: 120px; overflow-y: auto; margin-top: 8px;">
-                <table id="histBonTempTable">
-                    <thead><tr><th>#</th><th>سلعة</th><th>عدد</th><th class="privacy-hide">سعر</th><th>حذف</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-
-            <div style="margin-top: 8px; font-size: 12px;">
-                <label><input type="checkbox" id="histRestoreStock" checked> خصم هذه السلع من الستوك الحالي أيضاً؟</label>
-            </div>
-
-            <button class="action-btn" style="background: var(--accent-green); color:#000; margin-top: 10px;" onclick="saveBonToHistoryDate()">💾 حفظ وتحديث الأرشيف</button>
         </div>
     </div>
 
@@ -804,10 +741,7 @@
         let supplyCart = [];
         let cart = [];
         let debtCart = [];
-        let calcItems = [];
-        let histBonTemp = [];
         let today = new Date().toISOString().split('T')[0];
-        let currentSelectedHistoryDate = null;
 
         let currentDateEl = document.getElementById('currentDate');
         if (currentDateEl) currentDateEl.innerText = today;
@@ -972,7 +906,6 @@
             renderBundlesList();
             renderBoxLinksList();
             renderCheckListUI();
-            renderCalcUI();
             renderDebts();
         }
 
@@ -1025,8 +958,8 @@
             if (tabId === 'historyTab') loadHistoryDaysList();
             if (tabId === 'debtTab') renderDebts();
             if (tabId === 'checkListTab') renderCheckListUI();
-            if (tabId === 'supplyTab') renderSupplyBonsList();
             if (tabId === 'toolsTab') {
+                renderSupplyBonsList();
                 renderBundlesList();
                 renderBoxLinksList();
             }
@@ -1071,13 +1004,8 @@
                         document.getElementById('saleCustomPrice').value = p.sell;
                     } else if (type === 'supply') {
                         document.getElementById('supplyBuyPrice').value = p.buy;
-                    } else if (type === 'calc') {
-                        document.getElementById('calcBuyPrice').value = p.buy;
-                        document.getElementById('calcSellPrice').value = p.sell;
                     } else if (type === 'debt') {
                         document.getElementById('debtPrice').value = p.sell;
-                    } else if (type === 'histBon') {
-                        document.getElementById('histBonPrice').value = p.sell;
                     } else if (type === 'quick') {
                         document.getElementById('quickPrice').value = p.sell;
                     } else if (type === 'edit') {
@@ -1110,7 +1038,13 @@
             if (sugg) sugg.style.display = 'none';
         }
 
-        /* --- حساب أرباح فترة محددة --- */
+        /* --- حساب أرباح فترة محددة مع زر Reset --- */
+        function resetProfitRangeDates() {
+            document.getElementById('profitStartDate').value = '';
+            document.getElementById('profitEndDate').value = '';
+            document.getElementById('profitRangeResultCard').style.display = 'none';
+        }
+
         function calculateProfitRange() {
             let start = document.getElementById('profitStartDate').value;
             let end = document.getElementById('profitEndDate').value;
@@ -1420,30 +1354,6 @@
             }
         }
 
-        function showSupplyReceiptGlobal(storageKey, bonId) {
-            let supplyBons = getSafeJSON(storageKey, []);
-            let bon = supplyBons.find(b => b.id === bonId || b.displayId === bonId);
-            if (!bon) return;
-            let rows = '';
-            let totalQty = 0;
-            bon.items.forEach((it, idx) => {
-                totalQty += it.qty;
-                rows += `<tr><td>${idx + 1}</td><td class="r-name">${it.name}</td><td>${it.qty}</td><td>${it.buyPrice}</td><td><b>${it.totalCost}</b></td></tr>`;
-            });
-            document.getElementById('receiptPaper').innerHTML = `
-                <div class="receipt-brand">ONE<span>POS</span></div>
-                <div class="receipt-sub">إيصال بون مشتروات وبضاعة</div>
-                <div class="receipt-meta"><span>رقم البون: <b>#${bon.displayId || 1}</b></span><span>${bon.date || today} | ${bon.time}</span></div>
-                <div style="font-size:11px; text-align:center; font-weight:bold; margin-top:6px;">المورد: ${bon.supplier}</div>
-                <hr class="receipt-divider">
-                <table class="receipt-table"><thead><tr><th>#</th><th style="text-align:right;">السلعة</th><th>الكمية</th><th>الشراء</th><th>المجموع</th></tr></thead><tbody>${rows}</tbody></table>
-                <hr class="receipt-divider">
-                <div style="display:flex; justify-content:space-between; font-size:12px; color:#6b7280; margin-bottom:8px;"><span>عدد السلع: ${bon.items.length}</span><span>الوحدات: ${totalQty}</span></div>
-                <div class="receipt-total"><span>إجمالي التكلفة</span><span class="amt">${bon.totalCost} د.ج</span></div>
-                <button class="receipt-close" onclick="closeReceipt()">إغلاق</button>`;
-            document.getElementById('receiptModal').style.display = 'flex';
-        }
-
         function renderSupplyBonsList() {
             let container = document.getElementById('supplyBonsList');
             if (!container) return;
@@ -1468,7 +1378,6 @@
                         </div>
                         <div id="supply_details_${displayIdx}" style="display:none; margin-top:10px; border-top:1px dashed var(--border-color); padding-top:10px;">
                             <table><thead><tr><th>#</th><th style="text-align:right;">السلعة</th><th>الكمية</th><th>الشراء</th><th>المجموع</th></tr></thead><tbody>${tableRows}</tbody></table>
-                            <button class="btn-sm btn-edit" style="margin-top:8px;" onclick="showSupplyReceiptGlobal('${bon.storageKey}', ${bon.id})">🧾 عرض الإيصال</button>
                         </div>
                     </div>`;
             });
@@ -1578,7 +1487,7 @@
             document.getElementById('pBuyPrice').value = p.buy;
             document.getElementById('pSellPrice').value = p.sell;
             document.getElementById('pStock').value = p.stock;
-            switchTab('stockTab', document.querySelectorAll('.tab-btn')[2]);
+            switchTab('stockTab', document.querySelectorAll('.tab-btn')[1]);
         }
 
         function deleteProduct(name) {
@@ -1825,7 +1734,6 @@
                 document.querySelectorAll('.accordion-arrow').forEach(el => el.innerText = '▼');
                 detailsDiv.style.display = 'block';
                 if (arrow) arrow.innerText = '▲';
-                currentSelectedHistoryDate = dateStr;
                 populateHistoryDayContent(dateStr, detailsDiv);
             }
         }
@@ -2008,30 +1916,6 @@
 
         function clearCheckList() { checkListItems = []; localStorage.setItem('checkListItems', JSON.stringify(checkListItems)); renderCheckListUI(); }
 
-        function addToCalc() {
-            let name = document.getElementById('calcProductSearch').value.trim();
-            let qty = parseInt(document.getElementById('calcQty').value);
-            let sellPrice = parseFloat(document.getElementById('calcSellPrice').value);
-            if (!name || isNaN(qty) || qty <= 0) return;
-            if (isNaN(sellPrice) && products[name]) sellPrice = products[name].sell;
-            calcItems.push({ name, qty, sellPrice, totalSell: qty * sellPrice });
-            renderCalcUI();
-        }
-
-        function renderCalcUI() {
-            let tbody = document.querySelector('#calcTable tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            let totalSell = 0;
-            calcItems.forEach((item, index) => {
-                totalSell += item.totalSell;
-                tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td class="privacy-hide">${item.totalSell}</td><td><button class="btn-sm btn-delete" onclick="calcItems.splice(${index},1); renderCalcUI();">X</button></td></tr>`;
-            });
-            document.getElementById('calcTotalSell').innerText = `${totalSell} د.ج`;
-        }
-
-        function clearCalc() { calcItems = []; renderCalcUI(); }
-
         function showReceipt(dateStr, bonIndex, source) {
             let bons = source === 'today' ? getSafeStorageToday('bons_' + dateStr) : getSafeJSON('archived_bons_' + dateStr, []);
             let bon = bons[bonIndex];
@@ -2200,7 +2084,6 @@
         renderBundlesList();
         renderBoxLinksList();
         renderCheckListUI();
-        renderCalcUI();
     </script>
 </body>
 </html>
