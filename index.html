@@ -285,9 +285,13 @@
                 <button class="action-btn" style="background: #2563eb; color:#fff;" onclick="exportAppData()">📥 تصدير نسخة احتياطية (Backup)</button>
             </div>
 
-            <div>
+            <div style="margin-bottom: 8px;">
                 <input type="file" id="importFile" onchange="importAppData(event)" style="display:none;">
                 <label for="importFile" style="background: var(--accent-green); color:#000; padding: 10px; border-radius: 8px; display: block; cursor: pointer; font-weight: bold; text-align: center; font-size: 13px;">📤 استعادة البيانات من ملف Backup</label>
+            </div>
+
+            <div>
+                <button class="action-btn" style="background: var(--accent-red); color:#fff;" onclick="resetLocalStorageEmergency()">⚠️ تصفير البيانات المعلقة (Reset Storage)</button>
             </div>
         </div>
     </div>
@@ -757,15 +761,23 @@
         }
 
         function getSafeStorageToday(key) {
-            let data = getSafeJSON(key, []);
-            if (!Array.isArray(data)) return [];
-            return data.filter(item => item && typeof item === 'object' && Object.keys(item).length > 0 && Array.isArray(item.items) && item.items.length > 0);
+            try {
+                let data = getSafeJSON(key, []);
+                if (!Array.isArray(data)) return [];
+                return data.filter(item => item && typeof item === 'object' && Object.keys(item).length > 0 && Array.isArray(item.items) && item.items.length > 0);
+            } catch(e) {
+                return [];
+            }
         }
 
         function getSafeSalesToday(key) {
-            let data = getSafeJSON(key, []);
-            if (!Array.isArray(data)) return [];
-            return data.filter(item => item && typeof item === 'object' && Object.keys(item).length > 0 && item.name);
+            try {
+                let data = getSafeJSON(key, []);
+                if (!Array.isArray(data)) return [];
+                return data.filter(item => item && typeof item === 'object' && Object.keys(item).length > 0 && item.name);
+            } catch(e) {
+                return [];
+            }
         }
 
         function setSafeStorageToday(key, value) {
@@ -775,10 +787,25 @@
             } catch(e) {}
         }
 
-        let products = getSafeJSON('products', {});
-        let debts = getSafeJSON('debts', []);
-        let checkListItems = getSafeJSON('checkListItems', []);
-        let bundles = getSafeJSON('bundles', []);
+        function resetLocalStorageEmergency() {
+            if (confirm('هل أنت متأكد من تصفير البيانات المعلقة؟ سيتم مسح التخزين المؤقت التالف فقط وإبقاء السلع إذا أمكن.')) {
+                try {
+                    let savedProd = localStorage.getItem('products');
+                    localStorage.clear();
+                    if (savedProd) localStorage.setItem('products', savedProd);
+                    alert('تم التنظيف بنجاح، سيتم إعادة تحميل الصفحة.');
+                    location.reload();
+                } catch(e) {
+                    localStorage.clear();
+                    location.reload();
+                }
+            }
+        }
+
+        let products = {};
+        let debts = [];
+        let checkListItems = [];
+        let bundles = [];
         let supplyCart = [];
         let cart = [];
         let debtCart = [];
@@ -786,25 +813,41 @@
         let today = new Date().toISOString().split('T')[0];
         let currentSelectedHistoryDate = null;
 
+        try {
+            products = getSafeJSON('products', {});
+            debts = getSafeJSON('debts', []);
+            checkListItems = getSafeJSON('checkListItems', []);
+            bundles = getSafeJSON('bundles', []);
+        } catch (e) {
+            products = {};
+            debts = [];
+            checkListItems = [];
+            bundles = [];
+        }
+
         let currentDateEl = document.getElementById('currentDate');
         if (currentDateEl) currentDateEl.innerText = today;
 
         function deductStockWithUnboxing(itemName, qtyNeeded) {
-            if (!products[itemName]) return;
-            let p = products[itemName];
-            if (p.stock < qtyNeeded && p.parentName && products[p.parentName] && p.packRatio > 0) {
-                let parent = products[p.parentName];
-                while (p.stock < qtyNeeded && parent.stock > 0) {
-                    parent.stock -= 1;
-                    p.stock += parseInt(p.packRatio);
+            try {
+                if (!products[itemName]) return;
+                let p = products[itemName];
+                if (p.stock < qtyNeeded && p.parentName && products[p.parentName] && p.packRatio > 0) {
+                    let parent = products[p.parentName];
+                    while (p.stock < qtyNeeded && parent.stock > 0) {
+                        parent.stock -= 1;
+                        p.stock += parseInt(p.packRatio);
+                    }
                 }
-            }
-            p.stock -= qtyNeeded;
+                p.stock -= qtyNeeded;
+            } catch(e) {}
         }
 
         function restoreStockSmart(itemName, qtyToRestore) {
-            if (!products[itemName]) return;
-            products[itemName].stock += qtyToRestore;
+            try {
+                if (!products[itemName]) return;
+                products[itemName].stock += qtyToRestore;
+            } catch(e) {}
         }
 
         function parseTimeValue(timeStr) {
@@ -823,17 +866,23 @@
 
         function normalizeBons(bonsArray) {
             if (!Array.isArray(bonsArray)) return [];
-            let validBons = bonsArray.filter(b => b && typeof b === 'object' && Array.isArray(b.items) && b.items.length > 0);
-            validBons.sort((a, b) => parseTimeValue(a.time) - parseTimeValue(b.time));
-            validBons.forEach((b, idx) => { b.id = idx + 1; });
-            return validBons;
+            try {
+                let validBons = bonsArray.filter(b => b && typeof b === 'object' && Array.isArray(b.items) && b.items.length > 0);
+                validBons.sort((a, b) => parseTimeValue(a.time) - parseTimeValue(b.time));
+                validBons.forEach((b, idx) => { b.id = idx + 1; });
+                return validBons;
+            } catch(e) {
+                return bonsArray;
+            }
         }
 
-        let initBons = getSafeStorageToday('bons_' + today);
-        if (initBons.length > 0) {
-            initBons = normalizeBons(initBons);
-            setSafeStorageToday('bons_' + today, initBons);
-        }
+        try {
+            let initBons = getSafeStorageToday('bons_' + today);
+            if (initBons.length > 0) {
+                initBons = normalizeBons(initBons);
+                setSafeStorageToday('bons_' + today, initBons);
+            }
+        } catch(e) {}
 
         let privacyMode = localStorage.getItem('privacyMode') === 'true';
 
@@ -875,7 +924,7 @@
             setTimeout(() => { if (splash) splash.style.display = 'none'; }, 500);
         }
 
-        setTimeout(hideSplash, 1800);
+        setTimeout(hideSplash, 1200);
         window.addEventListener('load', hideSplash);
 
         window.addEventListener('pageshow', function() { syncAndRefreshAll(); });
@@ -884,14 +933,16 @@
         });
 
         function syncAndRefreshAll() {
-            products = getSafeJSON('products', {});
-            renderDailyReport();
-            updateProductViews();
-            renderSupplyBonsList();
-            renderBundlesList();
-            renderBoxLinksList();
-            renderCheckListUI();
-            renderDebts();
+            try {
+                products = getSafeJSON('products', {});
+                renderDailyReport();
+                updateProductViews();
+                renderSupplyBonsList();
+                renderBundlesList();
+                renderBoxLinksList();
+                renderCheckListUI();
+                renderDebts();
+            } catch(e) {}
         }
 
         function toggleSettingsModal() {
@@ -907,13 +958,15 @@
         }
 
         function exportAppData() {
-            let data = JSON.stringify(localStorage);
-            let blob = new Blob([data], {type: "application/json"});
-            let url = URL.createObjectURL(blob);
-            let a = document.createElement('a');
-            a.href = url;
-            a.download = `onepos_backup_${today}.json`;
-            a.click();
+            try {
+                let data = JSON.stringify(localStorage);
+                let blob = new Blob([data], {type: "application/json"});
+                let url = URL.createObjectURL(blob);
+                let a = document.createElement('a');
+                a.href = url;
+                a.download = `onepos_backup_${today}.json`;
+                a.click();
+            } catch(e) { alert('فشل التصدير'); }
         }
 
         function importAppData(event) {
@@ -947,56 +1000,51 @@
         }
 
         function filterProducts(type, query) {
-            let suggestionsBox = document.getElementById(type + 'Suggestions');
-            if (!suggestionsBox) return;
-            suggestionsBox.innerHTML = '';
-            
-            if (!query.trim()) {
-                suggestionsBox.style.display = 'none';
-                return;
-            }
-
-            let matches = Object.keys(products).filter(name => name.toLowerCase().includes(query.toLowerCase()));
-            if (matches.length === 0) {
-                suggestionsBox.style.display = 'none';
-                return;
-            }
-
-            let searchInputId = type;
-            if (type === 'bundle1') searchInputId = 'bundleItem1';
-            else if (type === 'bundle2') searchInputId = 'bundleItem2';
-            else if (type === 'boxLinkItem') searchInputId = 'boxLinkItemSearch';
-            else if (type === 'boxLinkParent') searchInputId = 'boxLinkParentSearch';
-            else searchInputId = type + 'ProductSearch';
-
-            matches.forEach(name => {
-                let p = products[name];
-                let div = document.createElement('div');
-                div.className = 'suggestion-item';
-                div.innerHTML = `<span><b>${name}</b></span> <span style="color:var(--accent-green);">الستوك: ${p.stock} | ${p.sell} د.ج</span>`;
+            try {
+                let suggestionsBox = document.getElementById(type + 'Suggestions');
+                if (!suggestionsBox) return;
+                suggestionsBox.innerHTML = '';
                 
-                div.onclick = function() {
-                    let searchInput = document.getElementById(searchInputId);
-                    if (searchInput) searchInput.value = name;
+                if (!query || !query.trim()) {
                     suggestionsBox.style.display = 'none';
+                    return;
+                }
+
+                let matches = Object.keys(products).filter(name => name.toLowerCase().includes(query.toLowerCase()));
+                if (matches.length === 0) {
+                    suggestionsBox.style.display = 'none';
+                    return;
+                }
+
+                let searchInputId = type;
+                if (type === 'bundle1') searchInputId = 'bundleItem1';
+                else if (type === 'bundle2') searchInputId = 'bundleItem2';
+                else if (type === 'boxLinkItem') searchInputId = 'boxLinkItemSearch';
+                else if (type === 'boxLinkParent') searchInputId = 'boxLinkParentSearch';
+                else searchInputId = type + 'ProductSearch';
+
+                matches.forEach(name => {
+                    let p = products[name];
+                    let div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.innerHTML = `<span><b>${name}</b></span> <span style="color:var(--accent-green);">الستوك: ${p.stock} | ${p.sell} د.ج</span>`;
                     
-                    if (type === 'sale') {
-                        document.getElementById('saleCustomPrice').value = p.sell;
-                    } else if (type === 'supply') {
-                        document.getElementById('supplyBuyPrice').value = p.buy;
-                    } else if (type === 'debt') {
-                        document.getElementById('debtPrice').value = p.sell;
-                    } else if (type === 'quick') {
-                        document.getElementById('quickPrice').value = p.sell;
-                    } else if (type === 'edit') {
-                        document.getElementById('editPrice').value = p.sell;
-                    } else if (type === 'histBon') {
-                        document.getElementById('histBonPrice').value = p.sell;
-                    }
-                };
-                suggestionsBox.appendChild(div);
-            });
-            suggestionsBox.style.display = 'block';
+                    div.onclick = function() {
+                        let searchInput = document.getElementById(searchInputId);
+                        if (searchInput) searchInput.value = name;
+                        suggestionsBox.style.display = 'none';
+                        
+                        if (type === 'sale') document.getElementById('saleCustomPrice').value = p.sell;
+                        else if (type === 'supply') document.getElementById('supplyBuyPrice').value = p.buy;
+                        else if (type === 'debt') document.getElementById('debtPrice').value = p.sell;
+                        else if (type === 'quick') document.getElementById('quickPrice').value = p.sell;
+                        else if (type === 'edit') document.getElementById('editPrice').value = p.sell;
+                        else if (type === 'histBon') document.getElementById('histBonPrice').value = p.sell;
+                    };
+                    suggestionsBox.appendChild(div);
+                });
+                suggestionsBox.style.display = 'block';
+            } catch(e) {}
         }
 
         document.addEventListener('click', function(e) {
@@ -1027,93 +1075,95 @@
         }
 
         function calculateProfitRange() {
-            let start = document.getElementById('profitStartDate').value;
-            let end = document.getElementById('profitEndDate').value;
+            try {
+                let start = document.getElementById('profitStartDate').value;
+                let end = document.getElementById('profitEndDate').value;
 
-            if (!start || !end) return alert('يرجى تحديد تاريخ البداية وتاريخ النهاية!');
-            if (start > end) return alert('تاريخ البداية يجب أن يكون قبل تاريخ النهاية أو مساوياً له!');
+                if (!start || !end) return alert('يرجى تحديد تاريخ البداية وتاريخ النهاية!');
+                if (start > end) return alert('تاريخ البداية يجب أن يكون قبل تاريخ النهاية أو مساوياً له!');
 
-            let totalRev = 0, totalCost = 0, totalBons = 0;
-            let itemsSummary = {};
+                let totalRev = 0, totalCost = 0, totalBons = 0;
+                let itemsSummary = {};
 
-            for (let i = 0; i < localStorage.length; i++) {
-                let key = localStorage.key(i);
-                if (key && key.startsWith('archived_sales_')) {
-                    let dateStr = key.replace('archived_sales_', '');
-                    if (dateStr >= start && dateStr <= end) {
-                        let sales = getSafeSalesToday(key);
-                        sales.forEach(it => {
-                            let rev = it.total || 0;
-                            let cost = (it.buyPrice || 0) * (it.qty || 0);
-                            totalRev += rev;
-                            totalCost += cost;
+                for (let i = 0; i < localStorage.length; i++) {
+                    let key = localStorage.key(i);
+                    if (key && key.startsWith('archived_sales_')) {
+                        let dateStr = key.replace('archived_sales_', '');
+                        if (dateStr >= start && dateStr <= end) {
+                            let sales = getSafeSalesToday(key);
+                            sales.forEach(it => {
+                                let rev = it.total || 0;
+                                let cost = (it.buyPrice || 0) * (it.qty || 0);
+                                totalRev += rev;
+                                totalCost += cost;
 
-                            if (!itemsSummary[it.name]) {
-                                itemsSummary[it.name] = { qty: 0, revenue: 0, cost: 0 };
-                            }
-                            itemsSummary[it.name].qty += (it.qty || 0);
-                            itemsSummary[it.name].revenue += rev;
-                            itemsSummary[it.name].cost += cost;
-                        });
+                                if (!itemsSummary[it.name]) {
+                                    itemsSummary[it.name] = { qty: 0, revenue: 0, cost: 0 };
+                                }
+                                itemsSummary[it.name].qty += (it.qty || 0);
+                                itemsSummary[it.name].revenue += rev;
+                                itemsSummary[it.name].cost += cost;
+                            });
+                        }
+                    }
+                    if (key && key.startsWith('archived_bons_')) {
+                        let dateStr = key.replace('archived_bons_', '');
+                        if (dateStr >= start && dateStr <= end) {
+                            let bons = getSafeJSON(key, []);
+                            totalBons += bons.length;
+                        }
                     }
                 }
-                if (key && key.startsWith('archived_bons_')) {
-                    let dateStr = key.replace('archived_bons_', '');
-                    if (dateStr >= start && dateStr <= end) {
-                        let bons = getSafeJSON(key, []);
-                        totalBons += bons.length;
-                    }
+
+                if (today >= start && today <= end) {
+                    let todaySales = getSafeSalesToday('sales_' + today);
+                    let todayBons = getSafeStorageToday('bons_' + today);
+                    totalBons += todayBons.length;
+                    todaySales.forEach(it => {
+                        let rev = it.total || 0;
+                        let cost = (it.buyPrice || 0) * (it.qty || 0);
+                        totalRev += rev;
+                        totalCost += cost;
+
+                        if (!itemsSummary[it.name]) {
+                            itemsSummary[it.name] = { qty: 0, revenue: 0, cost: 0 };
+                        }
+                        itemsSummary[it.name].qty += (it.qty || 0);
+                        itemsSummary[it.name].revenue += rev;
+                        itemsSummary[it.name].cost += cost;
+                    });
                 }
-            }
 
-            if (today >= start && today <= end) {
-                let todaySales = getSafeSalesToday('sales_' + today);
-                let todayBons = getSafeStorageToday('bons_' + today);
-                totalBons += todayBons.length;
-                todaySales.forEach(it => {
-                    let rev = it.total || 0;
-                    let cost = (it.buyPrice || 0) * (it.qty || 0);
-                    totalRev += rev;
-                    totalCost += cost;
+                let netProfit = totalRev - totalCost;
 
-                    if (!itemsSummary[it.name]) {
-                        itemsSummary[it.name] = { qty: 0, revenue: 0, cost: 0 };
-                    }
-                    itemsSummary[it.name].qty += (it.qty || 0);
-                    itemsSummary[it.name].revenue += rev;
-                    itemsSummary[it.name].cost += cost;
-                });
-            }
+                document.getElementById('rangeLabel').innerText = `${start} إلى ${end}`;
+                document.getElementById('rangeRevenue').innerText = `${totalRev} د.ج`;
+                document.getElementById('rangeCost').innerText = `${totalCost} د.ج`;
+                document.getElementById('rangeProfit').innerText = `${netProfit} د.ج`;
+                document.getElementById('rangeBonsCount').innerText = totalBons;
 
-            let netProfit = totalRev - totalCost;
+                let tbody = document.querySelector('#rangeItemsTable tbody');
+                tbody.innerHTML = '';
+                let idx = 0;
+                for (let name in itemsSummary) {
+                    let s = itemsSummary[name];
+                    let profit = s.revenue - s.cost;
+                    idx++;
+                    tbody.innerHTML += `<tr>
+                        <td class="num-col">${idx}</td>
+                        <td><b>${name}</b></td>
+                        <td>${s.qty}</td>
+                        <td class="privacy-hide">${s.revenue} د.ج</td>
+                        <td class="hide-profit-section privacy-hide" style="color:var(--accent-green); font-weight:bold;">${profit} د.ج</td>
+                    </tr>`;
+                }
 
-            document.getElementById('rangeLabel').innerText = `${start} إلى ${end}`;
-            document.getElementById('rangeRevenue').innerText = `${totalRev} د.ج`;
-            document.getElementById('rangeCost').innerText = `${totalCost} د.ج`;
-            document.getElementById('rangeProfit').innerText = `${netProfit} د.ج`;
-            document.getElementById('rangeBonsCount').innerText = totalBons;
+                if (idx === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#888;">لا توجد مبيعات في هذه الفترة</td></tr>`;
+                }
 
-            let tbody = document.querySelector('#rangeItemsTable tbody');
-            tbody.innerHTML = '';
-            let idx = 0;
-            for (let name in itemsSummary) {
-                let s = itemsSummary[name];
-                let profit = s.revenue - s.cost;
-                idx++;
-                tbody.innerHTML += `<tr>
-                    <td class="num-col">${idx}</td>
-                    <td><b>${name}</b></td>
-                    <td>${s.qty}</td>
-                    <td class="privacy-hide">${s.revenue} د.ج</td>
-                    <td class="hide-profit-section privacy-hide" style="color:var(--accent-green); font-weight:bold;">${profit} د.ج</td>
-                </tr>`;
-            }
-
-            if (idx === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#888;">لا توجد مبيعات في هذه الفترة</td></tr>`;
-            }
-
-            document.getElementById('profitRangeResultCard').style.display = 'block';
+                document.getElementById('profitRangeResultCard').style.display = 'block';
+            } catch(e) { alert('حدث خطأ أثناء الحساب'); }
         }
 
         function saveBundleRule() {
@@ -1222,43 +1272,49 @@
 
         function processSalesWithBundles(salesArray) {
             if (!Array.isArray(salesArray) || salesArray.length === 0) return [];
-            let activeBundles = getSafeJSON('bundles', []);
-            if (activeBundles.length === 0) return salesArray;
+            try {
+                let activeBundles = getSafeJSON('bundles', []);
+                if (activeBundles.length === 0) return salesArray;
 
-            let processedMap = {};
-            salesArray.forEach(saleItem => {
-                let targetName = saleItem.name;
-                let matchedBundle = activeBundles.find(b => b.item1 === saleItem.name || b.item2 === saleItem.name);
-                if (matchedBundle) targetName = matchedBundle.bundleName;
+                let processedMap = {};
+                salesArray.forEach(saleItem => {
+                    let targetName = saleItem.name;
+                    let matchedBundle = activeBundles.find(b => b.item1 === saleItem.name || b.item2 === saleItem.name);
+                    if (matchedBundle) targetName = matchedBundle.bundleName;
 
-                if (!processedMap[targetName]) {
-                    processedMap[targetName] = { name: targetName, qty: 0, total: 0, buyPrice: saleItem.buyPrice || 0, price: saleItem.price || 0, profit: 0 };
-                }
-                processedMap[targetName].qty += (saleItem.qty || 0);
-                processedMap[targetName].total += (saleItem.total || 0);
-                let lineCost = ((saleItem.buyPrice || 0) * (saleItem.qty || 0));
-                processedMap[targetName].profit += ((saleItem.total || 0) - lineCost);
-            });
-            return Object.values(processedMap);
+                    if (!processedMap[targetName]) {
+                        processedMap[targetName] = { name: targetName, qty: 0, total: 0, buyPrice: saleItem.buyPrice || 0, price: saleItem.price || 0, profit: 0 };
+                    }
+                    processedMap[targetName].qty += (saleItem.qty || 0);
+                    processedMap[targetName].total += (saleItem.total || 0);
+                    let lineCost = ((saleItem.buyPrice || 0) * (saleItem.qty || 0));
+                    processedMap[targetName].profit += ((saleItem.total || 0) - lineCost);
+                });
+                return Object.values(processedMap);
+            } catch(e) {
+                return salesArray;
+            }
         }
 
         function getAllSupplyBonsCombined() {
             let allBons = [];
-            let dateKeys = [];
-            for (let i = 0; i < localStorage.length; i++) {
-                let key = localStorage.key(i);
-                if (key && key.startsWith('supply_bons_')) dateKeys.push(key);
-            }
-            dateKeys.sort();
-            let globalId = 1;
-            dateKeys.forEach(key => {
-                let dateStr = key.replace('supply_bons_', '');
-                let bons = getSafeJSON(key, []);
-                bons.sort((a, b) => parseTimeValue(a.time) - parseTimeValue(b.time));
-                bons.forEach(b => {
-                    allBons.push({ ...b, displayId: globalId++, date: b.date || dateStr, storageKey: key });
+            try {
+                let dateKeys = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    let key = localStorage.key(i);
+                    if (key && key.startsWith('supply_bons_')) dateKeys.push(key);
+                }
+                dateKeys.sort();
+                let globalId = 1;
+                dateKeys.forEach(key => {
+                    let dateStr = key.replace('supply_bons_', '');
+                    let bons = getSafeJSON(key, []);
+                    bons.sort((a, b) => parseTimeValue(a.time) - parseTimeValue(b.time));
+                    bons.forEach(b => {
+                        allBons.push({ ...b, displayId: globalId++, date: b.date || dateStr, storageKey: key });
+                    });
                 });
-            });
+            } catch(e) {}
             return allBons;
         }
 
@@ -1381,80 +1437,84 @@
         }
 
         function updateProductViews() {
-            let stockTbody = document.querySelector('#stockTable tbody');
-            if (!stockTbody) return;
-            stockTbody.innerHTML = '';
-            let totalBuyVal = 0, totalSellVal = 0, itemCount = 0, stockIdx = 0;
-            for (let name in products) {
-                let p = products[name];
-                stockIdx++;
-                let linkInfo = p.parentName ? `<br><small style="color:var(--accent-blue);">🔗 علبة: ${p.parentName} (${p.packRatio})</small>` : '';
-                stockTbody.innerHTML += `<tr>
-                    <td class="num-col">${stockIdx}</td>
-                    <td><b>${name}</b>${linkInfo}</td>
-                    <td><span class="badge ${p.stock < 0 ? 'badge-warning':''}">${p.stock}</span></td>
-                    <td class="hide-profit-section">${p.buy}</td><td class="privacy-hide">${p.sell}</td>
-                    <td>
-                        <button class="btn-sm btn-edit" onclick="editProduct('${name}')">تعديل</button>
-                        <button class="btn-sm btn-delete" onclick="deleteProduct('${name}')">X</button>
-                    </td>
-                </tr>`;
-                if (p.stock > 0) {
-                    totalBuyVal += (p.buy * p.stock);
-                    totalSellVal += (p.sell * p.stock);
+            try {
+                let stockTbody = document.querySelector('#stockTable tbody');
+                if (!stockTbody) return;
+                stockTbody.innerHTML = '';
+                let totalBuyVal = 0, totalSellVal = 0, itemCount = 0, stockIdx = 0;
+                for (let name in products) {
+                    let p = products[name];
+                    stockIdx++;
+                    let linkInfo = p.parentName ? `<br><small style="color:var(--accent-blue);">🔗 علبة: ${p.parentName} (${p.packRatio})</small>` : '';
+                    stockTbody.innerHTML += `<tr>
+                        <td class="num-col">${stockIdx}</td>
+                        <td><b>${name}</b>${linkInfo}</td>
+                        <td><span class="badge ${p.stock < 0 ? 'badge-warning':''}">${p.stock}</span></td>
+                        <td class="hide-profit-section">${p.buy}</td><td class="privacy-hide">${p.sell}</td>
+                        <td>
+                            <button class="btn-sm btn-edit" onclick="editProduct('${name}')">تعديل</button>
+                            <button class="btn-sm btn-delete" onclick="deleteProduct('${name}')">X</button>
+                        </td>
+                    </tr>`;
+                    if (p.stock > 0) {
+                        totalBuyVal += (p.buy * p.stock);
+                        totalSellVal += (p.sell * p.stock);
+                    }
+                    itemCount++;
                 }
-                itemCount++;
-            }
-            document.getElementById('totalItemsCount').innerText = itemCount;
-            document.getElementById('stockTotalBuy').innerText = `${totalBuyVal} د.ج`;
-            document.getElementById('stockTotalSell').innerText = `${totalSellVal} د.ج`;
-            document.getElementById('stockExpectedProfit').innerText = `${totalSellVal - totalBuyVal} د.ج`;
+                document.getElementById('totalItemsCount').innerText = itemCount;
+                document.getElementById('stockTotalBuy').innerText = `${totalBuyVal} د.ج`;
+                document.getElementById('stockTotalSell').innerText = `${totalSellVal} د.ج`;
+                document.getElementById('stockExpectedProfit').innerText = `${totalSellVal - totalBuyVal} د.ج`;
 
-            renderStockAllSalesTable();
+                renderStockAllSalesTable();
+            } catch(e) {}
         }
 
         function renderStockAllSalesTable() {
-            let tbody = document.querySelector('#stockAllSalesTable tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
+            try {
+                let tbody = document.querySelector('#stockAllSalesTable tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
 
-            let allSalesCombined = [];
-            for (let i = 0; i < localStorage.length; i++) {
-                let key = localStorage.key(i);
-                if (key && (key.startsWith('sales_') || key.startsWith('archived_sales_'))) {
-                    let salesList = getSafeSalesToday(key);
-                    salesList.forEach(item => allSalesCombined.push(item));
+                let allSalesCombined = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    let key = localStorage.key(i);
+                    if (key && (key.startsWith('sales_') || key.startsWith('archived_sales_'))) {
+                        let salesList = getSafeSalesToday(key);
+                        salesList.forEach(item => allSalesCombined.push(item));
+                    }
                 }
-            }
 
-            let processedSales = processSalesWithBundles(allSalesCombined);
-            if (processedSales.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888;">لا توجد مبيعات مسجلة بعد</td></tr>`;
-                return;
-            }
+                let processedSales = processSalesWithBundles(allSalesCombined);
+                if (processedSales.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888;">لا توجد مبيعات مسجلة بعد</td></tr>`;
+                    return;
+                }
 
-            let idx = 0;
-            processedSales.forEach(item => {
-                idx++;
-                let profit = item.profit || ((item.total || 0) - ((item.buyPrice || 0) * (item.qty || 0)));
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="num-col">${idx}</td>
-                        <td><b>${item.name}</b></td>
-                        <td><span class="badge" style="background:var(--accent-blue);">${item.qty}</span></td>
-                        <td class="privacy-hide">${item.price || (item.total / item.qty)} د.ج</td>
-                        <td class="privacy-hide"><b>${item.total} د.ج</b></td>
-                        <td class="hide-profit-section privacy-hide" style="color:var(--accent-green); font-weight:bold;">${profit} د.ج</td>
-                    </tr>
-                `;
-            });
+                let idx = 0;
+                processedSales.forEach(item => {
+                    idx++;
+                    let profit = item.profit || ((item.total || 0) - ((item.buyPrice || 0) * (item.qty || 0)));
+                    tbody.innerHTML += `
+                        <tr>
+                            <td class="num-col">${idx}</td>
+                            <td><b>${item.name}</b></td>
+                            <td><span class="badge" style="background:var(--accent-blue);">${item.qty}</span></td>
+                            <td class="privacy-hide">${item.price || (item.total / item.qty)} د.ج</td>
+                            <td class="privacy-hide"><b>${item.total} د.ج</b></td>
+                            <td class="hide-profit-section privacy-hide" style="color:var(--accent-green); font-weight:bold;">${profit} د.ج</td>
+                        </tr>
+                    `;
+                });
+            } catch(e) {}
         }
 
         function quickStockSearch(query) {
             let resultBox = document.getElementById('stockQuickResult');
             if (!resultBox) return;
             resultBox.innerHTML = '';
-            if (!query.trim()) return;
+            if (!query || !query.trim()) return;
             let matches = Object.keys(products).filter(name => name.toLowerCase().includes(query.toLowerCase()));
             if (matches.length === 0) { resultBox.innerHTML = `<p style="text-align:center;color:#888;margin-top:8px;">لا توجد نتائج</p>`; return; }
             matches.forEach(name => {
@@ -1467,7 +1527,7 @@
             let suggestionsBox = document.getElementById('pNameSuggestions');
             if (!suggestionsBox) return;
             suggestionsBox.innerHTML = '';
-            if (!query.trim()) { suggestionsBox.style.display = 'none'; return; }
+            if (!query || !query.trim()) { suggestionsBox.style.display = 'none'; return; }
             let matches = Object.keys(products).filter(name => name.toLowerCase().includes(query.toLowerCase()));
             if (matches.length === 0) { suggestionsBox.style.display = 'none'; return; }
             matches.forEach(name => {
@@ -1556,28 +1616,30 @@
         }
 
         function updateCartUI() {
-            let tbody = document.querySelector('#cartTable tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            let totalBuy = 0, totalSell = 0, totalProfit = 0;
-            cart.forEach((item, index) => {
-                totalBuy += item.totalCost;
-                totalSell += item.total;
-                totalProfit += item.profit;
-                tbody.innerHTML += `<tr>
-                    <td><b>${index + 1}</b></td>
-                    <td><b>${item.name}</b></td>
-                    <td><input type="number" class="qty-input" value="${item.qty}" min="1" onchange="updateCartQty(${index}, this.value)"></td>
-                    <td class="hide-profit-section">${item.totalCost}</td>
-                    <td class="privacy-hide">${item.price}</td>
-                    <td class="privacy-hide"><b>${item.total}</b></td>
-                    <td class="hide-profit-section privacy-hide" style="color:var(--accent-green); font-weight:bold;">${item.profit}</td>
-                    <td><button class="btn-sm btn-delete" onclick="cart.splice(${index},1);updateCartUI();">X</button></td>
-                </tr>`;
-            });
-            document.getElementById('cartTotalBuy').innerText = `${totalBuy} د.ج`;
-            document.getElementById('cartTotalSell').innerText = `${totalSell} د.ج`;
-            document.getElementById('cartTotalProfit').innerText = `${totalProfit} د.ج`;
+            try {
+                let tbody = document.querySelector('#cartTable tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                let totalBuy = 0, totalSell = 0, totalProfit = 0;
+                cart.forEach((item, index) => {
+                    totalBuy += item.totalCost;
+                    totalSell += item.total;
+                    totalProfit += item.profit;
+                    tbody.innerHTML += `<tr>
+                        <td><b>${index + 1}</b></td>
+                        <td><b>${item.name}</b></td>
+                        <td><input type="number" class="qty-input" value="${item.qty}" min="1" onchange="updateCartQty(${index}, this.value)"></td>
+                        <td class="hide-profit-section">${item.totalCost}</td>
+                        <td class="privacy-hide">${item.price}</td>
+                        <td class="privacy-hide"><b>${item.total}</b></td>
+                        <td class="hide-profit-section privacy-hide" style="color:var(--accent-green); font-weight:bold;">${item.profit}</td>
+                        <td><button class="btn-sm btn-delete" onclick="cart.splice(${index},1);updateCartUI();">X</button></td>
+                    </tr>`;
+                });
+                document.getElementById('cartTotalBuy').innerText = `${totalBuy} د.ج`;
+                document.getElementById('cartTotalSell').innerText = `${totalSell} د.ج`;
+                document.getElementById('cartTotalProfit').innerText = `${totalProfit} د.ج`;
+            } catch(e) {}
         }
 
         function checkout() {
@@ -1626,58 +1688,60 @@
         }
 
         function renderDailyReport() {
-            let rawSalesHistory = getSafeSalesToday('sales_' + today);
-            let salesHistory = processSalesWithBundles(rawSalesHistory);
-            let tbody = document.querySelector('#dailyTable tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            let summary = {}, totalRevenue = 0, totalCost = 0;
-            rawSalesHistory.forEach(item => {
-                totalRevenue += (item.total || 0);
-                totalCost += ((item.buyPrice || 0) * (item.qty || 0));
-            });
-            salesHistory.forEach(item => {
-                if (!summary[item.name]) summary[item.name] = { qty: 0, revenue: 0 };
-                summary[item.name].qty += (item.qty || 0);
-                summary[item.name].revenue += (item.total || 0);
-            });
-            let dIdx = 0;
-            for (let name in summary) {
-                dIdx++;
-                tbody.innerHTML += `<tr><td class="num-col">${dIdx}</td><td>${name}</td><td>${summary[name].qty}</td><td class="privacy-hide">${summary[name].revenue}</td></tr>`;
-            }
-            document.getElementById('dailyRevenue').innerText = `${totalRevenue} د.ج`;
-            document.getElementById('dailyCost').innerText = `${totalCost} د.ج`;
-            document.getElementById('dailyProfit').innerText = `${totalRevenue - totalCost} د.ج`;
-
-            let bonsHistory = normalizeBons(getSafeStorageToday('bons_' + today));
-            let bonsContainer = document.getElementById('bonsHistoryList');
-            if (!bonsContainer) return;
-            bonsContainer.innerHTML = '';
-            if (bonsHistory.length === 0) {
-                bonsContainer.innerHTML = `<p style="text-align:center;color:#888;">لا توجد بونات اليوم</p>`;
-            } else {
-                for (let i = bonsHistory.length - 1; i >= 0; i--) {
-                    let bon = bonsHistory[i];
-                    if (!bon || !bon.items) continue;
-                    let itemsDetail = bon.items.map(it => `${it.name} (${it.qty}×${it.price})`).join(' ، ');
-                    bonsContainer.innerHTML += `
-                        <div class="bon-card">
-                            <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--accent-blue);">
-                                <span>${bon.quick ? '⚡ ' : ''}بون #${bon.id} [${bon.time}]</span>
-                                <div style="display:flex; gap:8px; align-items:center;">
-                                    <span class="privacy-hide" style="color:var(--accent-green);">${bon.total} د.ج</span>
-                                    <button class="btn-sm btn-delete" style="padding:2px 6px;" onclick="deleteTodayBon(${i})">🗑️</button>
-                                </div>
-                            </div>
-                            <div class="privacy-hide" style="font-size:11px; color:#aaa; margin-top:2px;">${itemsDetail}</div>
-                            <div style="display:flex; gap:6px; margin-top:6px;">
-                                <button class="btn-sm btn-edit" style="padding:4px 8px;" onclick="showReceipt('${today}', ${i}, 'today')">🧾 إيصال</button>
-                                <button class="btn-sm" style="padding:4px 8px; background:#eab308; color:#000; border:none;" onclick="openEditBonModal('${today}', ${i}, 'today')">✏️ تعديل</button>
-                            </div>
-                        </div>`;
+            try {
+                let rawSalesHistory = getSafeSalesToday('sales_' + today);
+                let salesHistory = processSalesWithBundles(rawSalesHistory);
+                let tbody = document.querySelector('#dailyTable tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                let summary = {}, totalRevenue = 0, totalCost = 0;
+                rawSalesHistory.forEach(item => {
+                    totalRevenue += (item.total || 0);
+                    totalCost += ((item.buyPrice || 0) * (item.qty || 0));
+                });
+                salesHistory.forEach(item => {
+                    if (!summary[item.name]) summary[item.name] = { qty: 0, revenue: 0 };
+                    summary[item.name].qty += (item.qty || 0);
+                    summary[item.name].revenue += (item.total || 0);
+                });
+                let dIdx = 0;
+                for (let name in summary) {
+                    dIdx++;
+                    tbody.innerHTML += `<tr><td class="num-col">${dIdx}</td><td>${name}</td><td>${summary[name].qty}</td><td class="privacy-hide">${summary[name].revenue}</td></tr>`;
                 }
-            }
+                document.getElementById('dailyRevenue').innerText = `${totalRevenue} د.ج`;
+                document.getElementById('dailyCost').innerText = `${totalCost} د.ج`;
+                document.getElementById('dailyProfit').innerText = `${totalRevenue - totalCost} د.ج`;
+
+                let bonsHistory = normalizeBons(getSafeStorageToday('bons_' + today));
+                let bonsContainer = document.getElementById('bonsHistoryList');
+                if (!bonsContainer) return;
+                bonsContainer.innerHTML = '';
+                if (bonsHistory.length === 0) {
+                    bonsContainer.innerHTML = `<p style="text-align:center;color:#888;">لا توجد بونات اليوم</p>`;
+                } else {
+                    for (let i = bonsHistory.length - 1; i >= 0; i--) {
+                        let bon = bonsHistory[i];
+                        if (!bon || !bon.items) continue;
+                        let itemsDetail = bon.items.map(it => `${it.name} (${it.qty}×${it.price})`).join(' ، ');
+                        bonsContainer.innerHTML += `
+                            <div class="bon-card">
+                                <div style="display:flex; justify-content:space-between; font-weight:bold; color:var(--accent-blue);">
+                                    <span>${bon.quick ? '⚡ ' : ''}بون #${bon.id} [${bon.time}]</span>
+                                    <div style="display:flex; gap:8px; align-items:center;">
+                                        <span class="privacy-hide" style="color:var(--accent-green);">${bon.total} د.ج</span>
+                                        <button class="btn-sm btn-delete" style="padding:2px 6px;" onclick="deleteTodayBon(${i})">🗑️</button>
+                                    </div>
+                                </div>
+                                <div class="privacy-hide" style="font-size:11px; color:#aaa; margin-top:2px;">${itemsDetail}</div>
+                                <div style="display:flex; gap:6px; margin-top:6px;">
+                                    <button class="btn-sm btn-edit" style="padding:4px 8px;" onclick="showReceipt('${today}', ${i}, 'today')">🧾 إيصال</button>
+                                    <button class="btn-sm" style="padding:4px 8px; background:#eab308; color:#000; border:none;" onclick="openEditBonModal('${today}', ${i}, 'today')">✏️ تعديل</button>
+                                </div>
+                            </div>`;
+                    }
+                }
+            } catch(e) {}
         }
 
         function closeDay() {
@@ -1706,41 +1770,43 @@
         }
 
         function loadHistoryDaysList() {
-            let container = document.getElementById('historyDaysContainer');
-            if (!container) return;
-            container.innerHTML = '';
-            let foundDates = new Set();
-            for (let i = 0; i < localStorage.length; i++) {
-                let key = localStorage.key(i);
-                if (key && (key.includes('sales_') || key.includes('zreport_') || key.includes('bons_')) && !key.includes('mirror_') && !key.includes('supply_') && !key.includes('bundles')) {
-                    let parts = key.split('_');
-                    let dateStr = parts[parts.length - 1];
-                    if (dateStr && dateStr.includes('-') && dateStr.length >= 8) foundDates.add(dateStr);
+            try {
+                let container = document.getElementById('historyDaysContainer');
+                if (!container) return;
+                container.innerHTML = '';
+                let foundDates = new Set();
+                for (let i = 0; i < localStorage.length; i++) {
+                    let key = localStorage.key(i);
+                    if (key && (key.includes('sales_') || key.includes('zreport_') || key.includes('bons_')) && !key.includes('mirror_') && !key.includes('supply_') && !key.includes('bundles')) {
+                        let parts = key.split('_');
+                        let dateStr = parts[parts.length - 1];
+                        if (dateStr && dateStr.includes('-') && dateStr.length >= 8) foundDates.add(dateStr);
+                    }
                 }
-            }
-            let sortedDates = Array.from(foundDates).sort().reverse();
-            if (sortedDates.length === 0) { container.innerHTML = `<p style="text-align:center; color:#888;">لا توجد أيام مؤرشفة</p>`; return; }
-            sortedDates.forEach(dateStr => {
-                let zReport = getSafeJSON('zreport_' + dateStr, null);
-                let cost = zReport ? zReport.cost : 0;
-                let dayCard = document.createElement('div');
-                dayCard.className = 'history-day-card';
-                dayCard.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleHistoryDayAccordion('${dateStr}', this)">
-                        <div>
-                            <span style="font-weight:bold; color:var(--accent-blue);">📅 ${dateStr}</span>
-                            <div class="hide-profit-section" style="font-size:11px; color:#eab308; font-weight:bold;">التكلفة: ${cost} د.ج</div>
+                let sortedDates = Array.from(foundDates).sort().reverse();
+                if (sortedDates.length === 0) { container.innerHTML = `<p style="text-align:center; color:#888;">لا توجد أيام مؤرشفة</p>`; return; }
+                sortedDates.forEach(dateStr => {
+                    let zReport = getSafeJSON('zreport_' + dateStr, null);
+                    let cost = zReport ? zReport.cost : 0;
+                    let dayCard = document.createElement('div');
+                    dayCard.className = 'history-day-card';
+                    dayCard.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center; cursor:pointer;" onclick="toggleHistoryDayAccordion('${dateStr}', this)">
+                            <div>
+                                <span style="font-weight:bold; color:var(--accent-blue);">📅 ${dateStr}</span>
+                                <div class="hide-profit-section" style="font-size:11px; color:#eab308; font-weight:bold;">التكلفة: ${cost} د.ج</div>
+                            </div>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <button class="btn-sm btn-edit" style="padding:2px 6px; background:var(--accent-green); color:#000;" onclick="event.stopPropagation(); openHistoryBonModal('${dateStr}')" title="إضافة بون منسي">➕ بون</button>
+                                <button class="btn-sm btn-delete" style="padding:2px 6px;" onclick="event.stopPropagation(); deleteArchivedDay('${dateStr}')">🗑️</button>
+                                <span style="font-size:14px; color:var(--accent-blue);" class="accordion-arrow">▼</span>
+                            </div>
                         </div>
-                        <div style="display:flex; gap:6px; align-items:center;">
-                            <button class="btn-sm btn-edit" style="padding:2px 6px; background:var(--accent-green); color:#000;" onclick="event.stopPropagation(); openHistoryBonModal('${dateStr}')" title="إضافة بون منسي">➕ بون</button>
-                            <button class="btn-sm btn-delete" style="padding:2px 6px;" onclick="event.stopPropagation(); deleteArchivedDay('${dateStr}')">🗑️</button>
-                            <span style="font-size:14px; color:var(--accent-blue);" class="accordion-arrow">▼</span>
-                        </div>
-                    </div>
-                    <div id="history_details_${dateStr}" style="display:none; margin-top:10px; border-top:1px solid var(--border-color); padding-top:10px;"></div>
-                `;
-                container.appendChild(dayCard);
-            });
+                        <div id="history_details_${dateStr}" style="display:none; margin-top:10px; border-top:1px solid var(--border-color); padding-top:10px;"></div>
+                    `;
+                    container.appendChild(dayCard);
+                });
+            } catch(e) {}
         }
 
         function toggleHistoryDayAccordion(dateStr, headerEl) {
@@ -1759,24 +1825,26 @@
         }
 
         function populateHistoryDayContent(dateStr, containerEl) {
-            let rawSalesHistory = getSafeSalesToday('archived_sales_' + dateStr);
-            let salesHistory = processSalesWithBundles(rawSalesHistory);
-            let bonsHistory = getSafeStorageToday('archived_bons_' + dateStr);
-            let totalRevenue = 0, totalCost = 0;
-            rawSalesHistory.forEach(item => { totalRevenue += item.total; totalCost += ((item.buyPrice || 0) * item.qty); });
-            let netProfit = totalRevenue - totalCost;
+            try {
+                let rawSalesHistory = getSafeSalesToday('archived_sales_' + dateStr);
+                let salesHistory = processSalesWithBundles(rawSalesHistory);
+                let bonsHistory = getSafeStorageToday('archived_bons_' + dateStr);
+                let totalRevenue = 0, totalCost = 0;
+                rawSalesHistory.forEach(item => { totalRevenue += item.total; totalCost += ((item.buyPrice || 0) * item.qty); });
+                let netProfit = totalRevenue - totalCost;
 
-            let bonsHtml = '';
-            bonsHistory.forEach((bon, i) => {
-                bonsHtml += `<div class="bon-card"><div style="display:flex; justify-content:space-between;"><span>Bon #${bon.id} [${bon.time}]</span><span style="color:var(--accent-green);">${bon.total} د.ج</span></div><div style="display:flex; gap:6px; margin-top:4px;"><button class="btn-sm btn-edit" onclick="showReceipt('${dateStr}', ${i}, 'archive')">🧾 إيصال</button><button class="btn-sm" style="background:#eab308; color:#000;" onclick="openEditBonModal('${dateStr}', ${i}, 'archive')">✏️ تعديل</button><button class="btn-sm btn-delete" onclick="deleteArchivedBon('${dateStr}', ${i})">🗑️ حذف</button></div></div>`;
-            });
+                let bonsHtml = '';
+                bonsHistory.forEach((bon, i) => {
+                    bonsHtml += `<div class="bon-card"><div style="display:flex; justify-content:space-between;"><span>Bon #${bon.id} [${bon.time}]</span><span style="color:var(--accent-green);">${bon.total} د.ج</span></div><div style="display:flex; gap:6px; margin-top:4px;"><button class="btn-sm btn-edit" onclick="showReceipt('${dateStr}', ${i}, 'archive')">🧾 إيصال</button><button class="btn-sm" style="background:#eab308; color:#000;" onclick="openEditBonModal('${dateStr}', ${i}, 'archive')">✏️ تعديل</button><button class="btn-sm btn-delete" onclick="deleteArchivedBon('${dateStr}', ${i})">🗑️ حذف</button></div></div>`;
+                });
 
-            containerEl.innerHTML = `
-                <div class="stat-box privacy-hide"><span>المبيعات:</span><span>${totalRevenue} د.ج</span></div>
-                <div class="stat-box hide-profit-section"><span>التكلفة:</span><span>${totalCost} د.ج</span></div>
-                <div class="stat-box profit privacy-hide hide-profit-section"><span>صافي الربح:</span><span>${netProfit} د.ج</span></div>
-                <h4 style="color:var(--accent-blue); margin:10px 0 4px 0; font-size:12px;">🧾 البونات (مع إمكانية التعديل والحذف):</h4>
-                <div style="max-height:220px; overflow-y:auto;">${bonsHtml || 'لا توجد بونات'}</div>`;
+                containerEl.innerHTML = `
+                    <div class="stat-box privacy-hide"><span>المبيعات:</span><span>${totalRevenue} د.ج</span></div>
+                    <div class="stat-box hide-profit-section"><span>التكلفة:</span><span>${totalCost} د.ج</span></div>
+                    <div class="stat-box profit privacy-hide hide-profit-section"><span>صافي الربح:</span><span>${netProfit} د.ج</span></div>
+                    <h4 style="color:var(--accent-blue); margin:10px 0 4px 0; font-size:12px;">🧾 البونات (مع إمكانية التعديل والحذف):</h4>
+                    <div style="max-height:220px; overflow-y:auto;">${bonsHtml || 'لا توجد بونات'}</div>`;
+            } catch(e) {}
         }
 
         function deleteArchivedBon(dateStr, bonIndex) {
@@ -1952,31 +2020,33 @@
         }
 
         function renderDebts() {
-            let container = document.getElementById('debtsList');
-            if (!container) return;
-            debts = getSafeJSON('debts', []);
-            container.innerHTML = debts.length === 0 ? `<p style="text-align:center;color:#888;">لا توجد ديون</p>` : '';
-            let totalSell = 0, totalProfit = 0;
-            debts.forEach((d, index) => {
-                totalSell += d.totalSell;
-                let dProfit = d.totalSell - (d.totalBuy || 0);
-                totalProfit += dProfit;
+            try {
+                let container = document.getElementById('debtsList');
+                if (!container) return;
+                debts = getSafeJSON('debts', []);
+                container.innerHTML = debts.length === 0 ? `<p style="text-align:center;color:#888;">لا توجد ديون</p>` : '';
+                let totalSell = 0, totalProfit = 0;
+                debts.forEach((d, index) => {
+                    totalSell += d.totalSell;
+                    let dProfit = d.totalSell - (d.totalBuy || 0);
+                    totalProfit += dProfit;
 
-                let itemsList = (d.items || []).map(i => `${i.name} (${i.qty}×${i.price})`).join(' ، ');
+                    let itemsList = (d.items || []).map(i => `${i.name} (${i.qty}×${i.price})`).join(' ، ');
 
-                container.innerHTML += `
-                    <div class="bon-card">
-                        <div style="display:flex; justify-content:space-between; font-weight:bold;">
-                            <span style="color:var(--accent-blue);">${d.customer} <small style="color:#aaa;">[${d.date}]</small></span>
-                            <span class="privacy-hide" style="color:#eab308; font-size:14px;">${d.totalSell} د.ج</span>
-                        </div>
-                        <div class="privacy-hide" style="font-size:11px; color:#aaa; margin:4px 0;">السلع: ${itemsList}</div>
-                        <button class="btn-sm btn-edit" style="margin-top:6px; background:var(--accent-green); color:#000; width:100%; justify-content:center;" onclick="completeDebtPayment(${index})">✔ تسديد وتسجيل المبيعات</button>
-                        <button class="btn-sm btn-delete" style="margin-top:4px; width:100%; justify-content:center;" onclick="deleteDebt(${index})">🗑️ حذف</button>
-                    </div>`;
-            });
-            document.getElementById('debtTotalSell').innerText = `${totalSell} د.ج`;
-            document.getElementById('debtTotalProfit').innerText = `${totalProfit} د.ج`;
+                    container.innerHTML += `
+                        <div class="bon-card">
+                            <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                                <span style="color:var(--accent-blue);">${d.customer} <small style="color:#aaa;">[${d.date}]</small></span>
+                                <span class="privacy-hide" style="color:#eab308; font-size:14px;">${d.totalSell} د.ج</span>
+                            </div>
+                            <div class="privacy-hide" style="font-size:11px; color:#aaa; margin:4px 0;">السلع: ${itemsList}</div>
+                            <button class="btn-sm btn-edit" style="margin-top:6px; background:var(--accent-green); color:#000; width:100%; justify-content:center;" onclick="completeDebtPayment(${index})">✔ تسديد وتسجيل المبيعات</button>
+                            <button class="btn-sm btn-delete" style="margin-top:4px; width:100%; justify-content:center;" onclick="deleteDebt(${index})">🗑️ حذف</button>
+                        </div>`;
+                });
+                document.getElementById('debtTotalSell').innerText = `${totalSell} د.ج`;
+                document.getElementById('debtTotalProfit').innerText = `${totalProfit} د.ج`;
+            } catch(e) {}
         }
 
         function deleteDebt(index) {
@@ -2037,17 +2107,19 @@
         }
 
         function renderCheckListUI() {
-            let tbody = document.querySelector('#checkListTable tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            let totalCost = 0;
-            checkListItems.forEach((item, index) => {
-                let unitCost = products[item.name] ? products[item.name].buy : 0;
-                let lineCost = unitCost * item.qty;
-                totalCost += lineCost;
-                tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td class="hide-profit-section">${lineCost}</td><td><button class="btn-sm btn-delete" onclick="checkListItems.splice(${index},1); localStorage.setItem('checkListItems', JSON.stringify(checkListItems)); renderCheckListUI();">X</button></td></tr>`;
-            });
-            document.getElementById('checkListTotalCost').innerText = `${totalCost} د.ج`;
+            try {
+                let tbody = document.querySelector('#checkListTable tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                let totalCost = 0;
+                checkListItems.forEach((item, index) => {
+                    let unitCost = products[item.name] ? products[item.name].buy : 0;
+                    let lineCost = unitCost * item.qty;
+                    totalCost += lineCost;
+                    tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td class="hide-profit-section">${lineCost}</td><td><button class="btn-sm btn-delete" onclick="checkListItems.splice(${index},1); localStorage.setItem('checkListItems', JSON.stringify(checkListItems)); renderCheckListUI();">X</button></td></tr>`;
+                });
+                document.getElementById('checkListTotalCost').innerText = `${totalCost} د.ج`;
+            } catch(e) {}
         }
 
         function clearCheckList() { checkListItems = []; localStorage.setItem('checkListItems', JSON.stringify(checkListItems)); renderCheckListUI(); }
@@ -2092,17 +2164,19 @@
         }
 
         function renderQuickCartUI() {
-            let tbody = document.querySelector('#quickCartTable tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            let total = 0, totalBuy = 0, totalProfit = 0;
-            quickCart.forEach((item, index) => {
-                total += item.total; totalBuy += item.totalCost; totalProfit += item.profit;
-                tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td class="hide-profit-section">${item.totalCost}</td><td class="privacy-hide">${item.price}</td><td class="privacy-hide"><b>${item.total}</b></td><td class="hide-profit-section privacy-hide">${item.profit}</td><td><button class="btn-sm btn-delete" onclick="quickCart.splice(${index},1); renderQuickCartUI();">X</button></td></tr>`;
-            });
-            document.getElementById('quickCartTotalBuy').innerText = `${totalBuy} د.ج`;
-            document.getElementById('quickCartTotal').innerText = `${total} د.ج`;
-            document.getElementById('quickCartTotalProfit').innerText = `${totalProfit} د.ج`;
+            try {
+                let tbody = document.querySelector('#quickCartTable tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                let total = 0, totalBuy = 0, totalProfit = 0;
+                quickCart.forEach((item, index) => {
+                    total += item.total; totalBuy += item.totalCost; totalProfit += item.profit;
+                    tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td class="hide-profit-section">${item.totalCost}</td><td class="privacy-hide">${item.price}</td><td class="privacy-hide"><b>${item.total}</b></td><td class="hide-profit-section privacy-hide">${item.profit}</td><td><button class="btn-sm btn-delete" onclick="quickCart.splice(${index},1); renderQuickCartUI();">X</button></td></tr>`;
+                });
+                document.getElementById('quickCartTotalBuy').innerText = `${totalBuy} د.ج`;
+                document.getElementById('quickCartTotal').innerText = `${total} د.ج`;
+                document.getElementById('quickCartTotalProfit').innerText = `${totalProfit} د.ج`;
+            } catch(e) {}
         }
 
         function checkoutQuickBon() {
@@ -2155,16 +2229,18 @@
         }
 
         function renderEditCartUI() {
-            let tbody = document.querySelector('#editCartTable tbody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            let total = 0, totalBuy = 0;
-            editCart.forEach((item, index) => {
-                total += item.total; totalBuy += item.totalCost;
-                tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td class="hide-profit-section">${item.totalCost}</td><td class="privacy-hide">${item.price}</td><td class="privacy-hide"><b>${item.total}</b></td><td class="hide-profit-section privacy-hide">${item.profit}</td><td><button class="btn-sm btn-delete" onclick="editCart.splice(${index},1); renderEditCartUI();">X</button></td></tr>`;
-            });
-            document.getElementById('editCartTotalBuy').innerText = `${totalBuy} د.ج`;
-            document.getElementById('editCartTotal').innerText = `${total} د.ج`;
+            try {
+                let tbody = document.querySelector('#editCartTable tbody');
+                if (!tbody) return;
+                tbody.innerHTML = '';
+                let total = 0, totalBuy = 0;
+                editCart.forEach((item, index) => {
+                    total += item.total; totalBuy += item.totalCost;
+                    tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td class="hide-profit-section">${item.totalCost}</td><td class="privacy-hide">${item.price}</td><td class="privacy-hide"><b>${item.total}</b></td><td class="hide-profit-section privacy-hide">${item.profit}</td><td><button class="btn-sm btn-delete" onclick="editCart.splice(${index},1); renderEditCartUI();">X</button></td></tr>`;
+                });
+                document.getElementById('editCartTotalBuy').innerText = `${totalBuy} د.ج`;
+                document.getElementById('editCartTotal').innerText = `${total} د.ج`;
+            } catch(e) {}
         }
 
         function saveEditedBon() {
@@ -2202,24 +2278,31 @@
         }
 
         function exportToCSV() {
-            let rawSalesHistory = getSafeSalesToday('sales_' + today);
-            let salesHistory = processSalesWithBundles(rawSalesHistory);
-            if (salesHistory.length === 0) return alert('لا توجد مبيعات!');
-            let csvContent = "\uFEFFItem,Qty,Price,Total\n";
-            salesHistory.forEach(item => { csvContent += `"${item.name}",${item.qty},${item.price || 0},${item.total}\n`; });
-            let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            let url = URL.createObjectURL(blob);
-            let a = document.createElement('a');
-            a.href = url; a.download = `Sales_${today}.csv`; a.click();
+            try {
+                let rawSalesHistory = getSafeSalesToday('sales_' + today);
+                let salesHistory = processSalesWithBundles(rawSalesHistory);
+                if (salesHistory.length === 0) return alert('لا توجد مبيعات!');
+                let csvContent = "\uFEFFItem,Qty,Price,Total\n";
+                salesHistory.forEach(item => { csvContent += `"${item.name}",${item.qty},${item.price || 0},${item.total}\n`; });
+                let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                let url = URL.createObjectURL(blob);
+                let a = document.createElement('a');
+                a.href = url; a.download = `Sales_${today}.csv`; a.click();
+            } catch(e) {}
         }
 
-        updateProductViews();
-        renderDailyReport();
-        renderDebts();
-        renderSupplyBonsList();
-        renderBundlesList();
-        renderBoxLinksList();
-        renderCheckListUI();
+        // تشغيل آمن للمكونات عند الإقلاع
+        try {
+            updateProductViews();
+            renderDailyReport();
+            renderDebts();
+            renderSupplyBonsList();
+            renderBundlesList();
+            renderBoxLinksList();
+            renderCheckListUI();
+        } catch(e) {
+            console.error("Initialization error recovered:", e);
+        }
     </script>
 </body>
 </html>
