@@ -394,7 +394,7 @@
         </div>
     </div>
 
-    <!-- الشريط العلوي المُعاد تراتيبه وتسمياته بدقة -->
+    <!-- الشريط العلوي -->
     <div class="nav-tabs">
         <div class="tab-btn active" onclick="switchTab('posTab', this)">🛒 فاتورة</div>
         <div class="tab-btn" onclick="switchTab('stockTab', this)">📦 الستوك</div>
@@ -470,7 +470,7 @@
         </div>
     </div>
 
-    <!-- Tab 2: الستوك -->
+    <!-- Tab 2: الستوك (مضاف إليه جدول كل المبيعات المفصل تماماً كطلبك) -->
     <div id="stockTab" class="tab-content">
         <div class="grid-container">
             <div class="card">
@@ -523,10 +523,30 @@
                     </table>
                 </div>
             </div>
+
+            <!-- جدول مفصل لكل المبيعات ووحدة تحت وحدة كما طلبت -->
+            <div class="card" style="grid-column: 1 / -1;">
+                <h3 style="color: var(--accent-green);">📊 سجل موجز وحركة كل المبيعات (مفصل وحدة تحت وحدة)</h3>
+                <div style="max-height: 350px; overflow-y: auto;">
+                    <table id="stockAllSalesTable">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>اسم السلعة</th>
+                                <th>الكمية المباعة</th>
+                                <th class="privacy-hide">سعر البيع</th>
+                                <th class="privacy-hide">الإجمالي</th>
+                                <th class="hide-profit-section privacy-hide">الفايدة</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Tab 3: المبيعات (مع ميزة إضافة بون منسي) -->
+    <!-- Tab 3: المبيعات (مع مكاملة إضافة، تعديل، ومسح البونات) -->
     <div id="historyTab" class="tab-content">
         <div class="card">
             <h3>📅 الأيام المؤرشفة والمبيعات السابقة</h3>
@@ -577,26 +597,26 @@
         </div>
     </div>
 
-    <!-- Tab 5: المراجعة -->
+    <!-- Tab 5: المراجعة (تأخذ مساحة الشاشة بشكل جيد جداً ودون قيود ضيقة) -->
     <div id="checkListTab" class="tab-content">
         <div class="card">
             <h3 style="color: #f59e0b;">📋 قائمة المراجعة</h3>
-            <div style="display: flex; gap: 5px;">
+            <div style="display: flex; gap: 5px; margin-bottom: 8px;">
                 <div class="search-box-wrapper" style="flex:1;">
                     <input type="text" id="checkProductSearch" placeholder="🔍 ابحث عن سلعة..." autocomplete="off" oninput="filterProducts('check', this.value)">
                     <div id="checkSuggestions" class="custom-suggestions"></div>
                 </div>
                 <input type="number" id="checkQty" value="1" placeholder="العدد" style="width: 70px;">
             </div>
-            <button class="action-btn" style="background: #f59e0b; color: #000;" onclick="addToCheckList()">+ إضافة للقائمة</button>
-            <div style="max-height: 250px; overflow-y: auto; margin-top: 6px;">
+            <button class="action-btn" style="background: #f59e0b; color: #000; margin-bottom: 10px;" onclick="addToCheckList()">+ إضافة للقائمة</button>
+            <div style="width: 100%; overflow-x: auto;">
                 <table id="checkListTable">
                     <thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th class="hide-profit-section">التكلفة</th><th>إجراء</th></tr></thead>
                     <tbody></tbody>
                 </table>
             </div>
-            <div class="stat-box hide-profit-section" style="margin-top: 10px;"><span>إجمالي التكلفة:</span><span id="checkListTotalCost">0 د.ج</span></div>
-            <button class="action-btn" style="background: #4b5563; color: white; padding: 8px; font-size: 12px; margin-top: 10px;" onclick="clearCheckList()">مسح القائمة</button>
+            <div class="stat-box hide-profit-section" style="margin-top: 15px;"><span>إجمالي التكلفة:</span><span id="checkListTotalCost">0 د.ج</span></div>
+            <button class="action-btn" style="background: #4b5563; color: white; padding: 10px; font-size: 13px; margin-top: 10px;" onclick="clearCheckList()">مسح القائمة بالكامل</button>
         </div>
     </div>
 
@@ -1452,6 +1472,46 @@
             document.getElementById('stockTotalBuy').innerText = `${totalBuyVal} د.ج`;
             document.getElementById('stockTotalSell').innerText = `${totalSellVal} د.ج`;
             document.getElementById('stockExpectedProfit').innerText = `${totalSellVal - totalBuyVal} د.ج`;
+
+            // تحديث جدول كل المبيعات الشامل داخل الستوك
+            renderStockAllSalesTable();
+        }
+
+        function renderStockAllSalesTable() {
+            let tbody = document.querySelector('#stockAllSalesTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            let allSalesCombined = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                let key = localStorage.key(i);
+                if (key && (key.startsWith('sales_') || key.startsWith('archived_sales_'))) {
+                    let salesList = getSafeSalesToday(key);
+                    salesList.forEach(item => allSalesCombined.push(item));
+                }
+            }
+
+            let processedSales = processSalesWithBundles(allSalesCombined);
+            if (processedSales.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#888;">لا توجد مبيعات مسجلة بعد</td></tr>`;
+                return;
+            }
+
+            let idx = 0;
+            processedSales.forEach(item => {
+                idx++;
+                let profit = item.profit || ((item.total || 0) - ((item.buyPrice || 0) * (item.qty || 0)));
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="num-col">${idx}</td>
+                        <td><b>${item.name}</b></td>
+                        <td><span class="badge" style="background:var(--accent-blue);">${item.qty}</span></td>
+                        <td class="privacy-hide">${item.price || (item.total / item.qty)} د.ج</td>
+                        <td class="privacy-hide"><b>${item.total} د.ج</b></td>
+                        <td class="hide-profit-section privacy-hide" style="color:var(--accent-green); font-weight:bold;">${profit} د.ج</td>
+                    </tr>
+                `;
+            });
         }
 
         function quickStockSearch(query) {
@@ -1661,7 +1721,6 @@
             if (bonsHistory.length === 0) {
                 bonsContainer.innerHTML = `<p style="text-align:center;color:#888;">لا توجد بونات اليوم</p>`;
             } else {
-                // الترتيب: الأولى في الأسفل والتي تليها فوقها (أو العكس حسب الرغبة الدقيقة)
                 for (let i = bonsHistory.length - 1; i >= 0; i--) {
                     let bon = bonsHistory[i];
                     if (!bon || !bon.items) continue;
@@ -1773,19 +1832,52 @@
 
             let bonsHtml = '';
             bonsHistory.forEach((bon, i) => {
-                bonsHtml += `<div class="bon-card"><div style="display:flex; justify-content:space-between;"><span>Bon #${bon.id} [${bon.time}]</span><span style="color:var(--accent-green);">${bon.total} د.ج</span></div><div style="display:flex; gap:6px; margin-top:4px;"><button class="btn-sm btn-edit" onclick="showReceipt('${dateStr}', ${i}, 'archive')">🧾 إيصال</button><button class="btn-sm" style="background:#eab308; color:#000;" onclick="openEditBonModal('${dateStr}', ${i}, 'archive')">✏️ تعديل</button></div></div>`;
+                bonsHtml += `<div class="bon-card"><div style="display:flex; justify-content:space-between;"><span>Bon #${bon.id} [${bon.time}]</span><span style="color:var(--accent-green);">${bon.total} د.ج</span></div><div style="display:flex; gap:6px; margin-top:4px;"><button class="btn-sm btn-edit" onclick="showReceipt('${dateStr}', ${i}, 'archive')">🧾 إيصال</button><button class="btn-sm" style="background:#eab308; color:#000;" onclick="openEditBonModal('${dateStr}', ${i}, 'archive')">✏️ تعديل</button><button class="btn-sm btn-delete" onclick="deleteArchivedBon('${dateStr}', ${i})">🗑️ حذف</button></div></div>`;
             });
 
             containerEl.innerHTML = `
                 <div class="stat-box privacy-hide"><span>المبيعات:</span><span>${totalRevenue} د.ج</span></div>
                 <div class="stat-box hide-profit-section"><span>التكلفة:</span><span>${totalCost} د.ج</span></div>
                 <div class="stat-box profit privacy-hide hide-profit-section"><span>صافي الربح:</span><span>${netProfit} د.ج</span></div>
-                <h4 style="color:var(--accent-blue); margin:10px 0 4px 0; font-size:12px;">🧾 البونات:</h4>
-                <div style="max-height:200px; overflow-y:auto;">${bonsHtml || 'لا توجد بونات'}</div>`;
+                <h4 style="color:var(--accent-blue); margin:10px 0 4px 0; font-size:12px;">🧾 البونات (مع إمكانية التعديل والحذف):</h4>
+                <div style="max-height:220px; overflow-y:auto;">${bonsHtml || 'لا توجد بونات'}</div>`;
+        }
+
+        function deleteArchivedBon(dateStr, bonIndex) {
+            let bonsKey = 'archived_bons_' + dateStr;
+            let salesKey = 'archived_sales_' + dateStr;
+            let zReportKey = 'zreport_' + dateStr;
+
+            let bonsHistory = getSafeJSON(bonsKey, []);
+            let targetBon = bonsHistory[bonIndex];
+            if (!targetBon) return;
+
+            if (confirm(`حذف البون #${targetBon.id} من أرشيف (${dateStr})؟`)) {
+                bonsHistory.splice(bonIndex, 1);
+                bonsHistory = normalizeBons(bonsHistory);
+                localStorage.setItem(bonsKey, JSON.stringify(bonsHistory));
+
+                let newSales = [];
+                bonsHistory.forEach(b => b.items.forEach(i => newSales.push(i)));
+                localStorage.setItem(salesKey, JSON.stringify(newSales));
+
+                let zReport = getSafeJSON(zReportKey, null);
+                if (zReport) {
+                    zReport.revenue -= targetBon.total;
+                    zReport.cost -= (targetBon.totalCost || 0);
+                    zReport.profit -= (targetBon.profit || 0);
+                    zReport.totalBons = bonsHistory.length;
+                    localStorage.setItem(zReportKey, JSON.stringify(zReport));
+                }
+
+                loadHistoryDaysList();
+                updateProductViews();
+                alert('تم حذف البون بنجاح!');
+            }
         }
 
         function deleteArchivedDay(dateStr) {
-            if (confirm(`حذف أرشيف (${dateStr})؟`)) {
+            if (confirm(`حذف أرشيف يوم (${dateStr}) بالكامل؟`)) {
                 for (let i = localStorage.length - 1; i >= 0; i--) {
                     let k = localStorage.key(i);
                     if (k && k.includes(dateStr)) localStorage.removeItem(k);
