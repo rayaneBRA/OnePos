@@ -155,14 +155,15 @@
         th, td { border-bottom: 1px solid var(--border-color); padding: 6px 4px; text-align: center; }
         th { color: var(--accent-blue); }
 
-        /* تصميم Z-Report المطابق للصورة */
+        /* --- تصميم Z-Report الاحترافي --- */
         .z-report-card {
             border: 2px solid #eab308;
             border-radius: 8px;
-            padding: 15px;
-            background: #151b2b; /* لون داكن مطابق */
+            padding: 10px 5px; /* مساحة داخلية مريحة */
+            background: #151b2b;
             margin-top: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            overflow-x: auto; /* شريط تمرير إذا لزم الأمر */
         }
         .z-report-title {
             text-align: center;
@@ -170,28 +171,35 @@
             font-size: 18px;
             font-weight: 800;
             margin-bottom: 15px;
-            margin-top: 0;
+            margin-top: 5px;
         }
         .z-report-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 5px;
-            font-size: 14px;
+            font-size: 13px;
+            white-space: nowrap; /* منع نزول النص أو الأرقام لسطر جديد نهائياً */
         }
         .z-report-table th {
             color: var(--accent-blue);
             font-size: 13px;
-            padding: 10px 5px;
+            padding: 10px 6px;
             border-bottom: 1px solid var(--border-color);
             text-align: center;
             font-weight: bold;
             background: transparent;
         }
         .z-report-table td {
-            padding: 12px 5px;
+            padding: 12px 6px;
             border-bottom: 1px solid var(--border-color);
             text-align: center;
             color: #fff;
+            vertical-align: middle;
+            white-space: nowrap; /* منع النزول */
+        }
+        /* تظليل الصفوف الزوجية لتسهيل القراءة */
+        .z-report-table tbody tr:nth-child(even) {
+            background: rgba(255, 255, 255, 0.03);
         }
         .z-report-table tr:last-child td {
             border-bottom: none;
@@ -199,6 +207,8 @@
         .z-report-item-name {
             font-weight: bold;
             color: #fff;
+            text-align: right !important; /* محاذاة اسم السلعة لليمين */
+            padding-right: 10px !important;
         }
         .z-report-profit {
             color: var(--accent-green);
@@ -619,7 +629,6 @@
             </div>
             <button class="action-btn" style="background: #f59e0b; color: #000;" onclick="addToCheckList()">+ إضافة للقائمة</button>
             
-            <!-- تم إزالة التمرير الداخلي ليأخذ كامل الصفحة -->
             <div style="margin-top: 10px;">
                 <table id="checkListTable">
                     <thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th class="hide-profit-section">التكلفة</th><th>إجراء</th></tr></thead>
