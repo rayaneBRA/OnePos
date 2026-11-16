@@ -60,7 +60,7 @@
         .brand span { color: var(--accent-red); }
         .brand img { width: 26px; height: 26px; border-radius: 6px; object-fit: cover; }
 
-        .header-controls { display: flex; gap: 6px; flex-wrap: wrap; }
+        .header-controls { display: flex; gap: 4px; align-items: center; }
 
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -141,10 +141,9 @@
         .privacy-show { display: none; }
         body.privacy-mode .privacy-show { display: inline !important; }
 
-        /* ميزة إخفاء الفايدة والتكلفة للزبون */
         body.profit-hidden .hide-profit-section { display: none !important; }
 
-        .btn-sm { width: auto; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer; font-weight: bold; font-size: 12px; background: var(--input-bg); color: var(--text-main); display: inline-flex; align-items: center; gap: 4px; }
+        .btn-sm { width: auto; padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border-color); cursor: pointer; font-weight: bold; font-size: 13px; background: var(--input-bg); color: var(--text-main); display: inline-flex; align-items: center; justify-content: center; }
         .btn-edit { background: var(--accent-blue); color: #000; border: none; }
         .btn-delete { background: var(--accent-red); color: #fff; border: none; }
 
@@ -160,7 +159,6 @@
         .badge-warning { background: #eab308; color: #000; }
         .bon-card { background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; margin-bottom: 6px; text-align: inherit; }
         .supply-bon-card { background: var(--input-bg); border: 1px solid var(--accent-green); border-radius: 10px; padding: 10px; margin-bottom: 10px; text-align: inherit; }
-        .z-report-card { background: rgba(234, 179, 8, 0.1); border: 2px solid #eab308; border-radius: 8px; padding: 10px; margin-bottom: 10px; text-align: inherit; }
         
         .history-day-card {
             background: var(--bg-card); border: 1px solid var(--border-color);
@@ -187,8 +185,6 @@
         .receipt-table td.r-name { text-align: right; font-weight: 700; }
         .receipt-total { display: flex; justify-content: space-between; align-items: center; background: #111827; color: #fff; padding: 12px 14px; border-radius: 10px; font-weight: 800; font-size: 16px; }
         .receipt-total .amt { color: #00ff88; }
-        .receipt-thanks { text-align: center; margin-top: 14px; font-size: 13px; color: #374151; font-weight: 600; }
-        .receipt-thanks small { display: block; color: #9ca3af; font-weight: 400; font-size: 10.5px; margin-top: 3px; }
         .receipt-close { margin-top: 14px; background: #eb0029 !important; color: #fff !important; border: none !important; font-weight: bold; cursor: pointer; }
 
         #splashScreen {
@@ -265,9 +261,9 @@
             ONE<span>POS</span> <small style="font-size: 10px; color: var(--accent-blue);">PRO</small>
         </div>
         <div class="header-controls">
-            <button class="btn-sm" id="privacyToggleBtn" style="background:#374151; color:#fff; border:none;" onclick="togglePrivacyMode()">🙈 إخفاء الأسعار</button>
-            <button class="btn-sm" id="profitToggleBtn" style="background:#4b5563; color:#fff; border:none;" onclick="toggleProfitMode()">🙈 إخفاء الفايدة</button>
-            <button class="btn-sm" onclick="toggleSettingsModal()">⚙️ الإعدادات</button>
+            <button class="btn-sm" id="privacyToggleBtn" style="background:#374151; color:#fff; border:none;" onclick="togglePrivacyMode()" title="إخفاء/إظهار الأسعار">🙈</button>
+            <button class="btn-sm" id="profitToggleBtn" style="background:#4b5563; color:#fff; border:none;" onclick="toggleProfitMode()" title="إخفاء/إظهار الفايدة">🔒</button>
+            <button class="btn-sm" style="background:var(--input-bg); color:#fff; border:1px solid var(--border-color);" onclick="toggleSettingsModal()" title="الإعدادات">⚙️</button>
         </div>
     </div>
 
@@ -919,7 +915,7 @@
         function applyPrivacyMode() {
             document.body.classList.toggle('privacy-mode', privacyMode);
             let btn = document.getElementById('privacyToggleBtn');
-            if (btn) btn.innerText = privacyMode ? '👁️ إظهار الكل' : '🙈 إخفاء الأسعار';
+            if (btn) btn.title = privacyMode ? 'إظهار الأسعار' : 'إخفاء الأسعار';
         }
 
         function togglePrivacyMode() {
@@ -930,13 +926,12 @@
 
         applyPrivacyMode();
 
-        /* --- تفعيل إخفاء الفايدة والتكلفة --- */
         let profitHidden = localStorage.getItem('profitHidden') === 'true';
 
         function applyProfitMode() {
             document.body.classList.toggle('profit-hidden', profitHidden);
             let btn = document.getElementById('profitToggleBtn');
-            if (btn) btn.innerText = profitHidden ? '👁️ إظهار الفايدة' : '🙈 إخفاء الفايدة';
+            if (btn) btn.title = profitHidden ? 'إظهار الفايدة' : 'إخفاء الفايدة';
         }
 
         function toggleProfitMode() {
