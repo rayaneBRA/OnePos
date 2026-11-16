@@ -159,11 +159,11 @@
         .z-report-card {
             border: 2px solid #eab308;
             border-radius: 8px;
-            padding: 10px 5px; /* مساحة داخلية مريحة */
+            padding: 10px 5px;
             background: #151b2b;
             margin-top: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            overflow-x: auto; /* شريط تمرير إذا لزم الأمر */
+            overflow-x: auto;
         }
         .z-report-title {
             text-align: center;
@@ -178,7 +178,7 @@
             border-collapse: collapse;
             margin-top: 5px;
             font-size: 13px;
-            white-space: nowrap; /* منع نزول النص أو الأرقام لسطر جديد نهائياً */
+            white-space: nowrap;
         }
         .z-report-table th {
             color: var(--accent-blue);
@@ -195,9 +195,8 @@
             text-align: center;
             color: #fff;
             vertical-align: middle;
-            white-space: nowrap; /* منع النزول */
+            white-space: nowrap;
         }
-        /* تظليل الصفوف الزوجية لتسهيل القراءة */
         .z-report-table tbody tr:nth-child(even) {
             background: rgba(255, 255, 255, 0.03);
         }
@@ -207,7 +206,7 @@
         .z-report-item-name {
             font-weight: bold;
             color: #fff;
-            text-align: right !important; /* محاذاة اسم السلعة لليمين */
+            text-align: right !important;
             padding-right: 10px !important;
         }
         .z-report-profit {
@@ -556,9 +555,10 @@
                 <button class="action-btn" style="background:var(--accent-green); color:#000;" onclick="addStockQty()">➕ إضافة للستوك الحالي</button>
             </div>
 
-            <div class="card">
+            <!-- تم تعديل هذه البطاقة لتأخذ كامل عرض الشاشة وبدون سكرول داخلي -->
+            <div class="card" style="grid-column: 1 / -1;">
                 <h3>📋 قائمة المخزون الحالي</h3>
-                <div style="max-height: 350px; overflow-y: auto;">
+                <div style="margin-top: 10px;">
                     <table id="stockTable">
                         <thead><tr><th>#</th><th>السلعة</th><th>الستوك</th><th class="hide-profit-section">الشراء</th><th class="privacy-hide">البيع</th><th>إجراء</th></tr></thead>
                         <tbody></tbody>
