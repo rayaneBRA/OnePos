@@ -360,7 +360,6 @@
         </div>
     </div>
 
-    <!-- نافذة إضافة بون منسي للتاريخ -->
     <div id="addHistoryBonModal" class="modal-overlay" onclick="closeHistoryBonModalOutside(event)">
         <div class="modal-content">
             <div class="modal-header">
@@ -394,7 +393,6 @@
         </div>
     </div>
 
-    <!-- الشريط العلوي -->
     <div class="nav-tabs">
         <div class="tab-btn active" onclick="switchTab('posTab', this)">🛒 فاتورة</div>
         <div class="tab-btn" onclick="switchTab('stockTab', this)">📦 الستوك</div>
@@ -404,7 +402,6 @@
         <div class="tab-btn" onclick="switchTab('toolsTab', this)" style="border-color: var(--accent-purple);">🛠️ أخرى</div>
     </div>
 
-    <!-- Tab 1: فاتورة -->
     <div id="posTab" class="tab-content active">
         <div class="grid-container">
             <div class="card">
@@ -470,7 +467,6 @@
         </div>
     </div>
 
-    <!-- Tab 2: الستوك (مضاف إليه جدول كل المبيعات المفصل تماماً كطلبك) -->
     <div id="stockTab" class="tab-content">
         <div class="grid-container">
             <div class="card">
@@ -524,7 +520,6 @@
                 </div>
             </div>
 
-            <!-- جدول مفصل لكل المبيعات ووحدة تحت وحدة كما طلبت -->
             <div class="card" style="grid-column: 1 / -1;">
                 <h3 style="color: var(--accent-green);">📊 سجل موجز وحركة كل المبيعات (مفصل وحدة تحت وحدة)</h3>
                 <div style="max-height: 350px; overflow-y: auto;">
@@ -546,7 +541,6 @@
         </div>
     </div>
 
-    <!-- Tab 3: المبيعات (مع مكاملة إضافة، تعديل، ومسح البونات) -->
     <div id="historyTab" class="tab-content">
         <div class="card">
             <h3>📅 الأيام المؤرشفة والمبيعات السابقة</h3>
@@ -554,7 +548,6 @@
         </div>
     </div>
 
-    <!-- Tab 4: الديون -->
     <div id="debtTab" class="tab-content">
         <div class="grid-container">
             <div class="card">
@@ -597,7 +590,6 @@
         </div>
     </div>
 
-    <!-- Tab 5: المراجعة (تأخذ مساحة الشاشة بشكل جيد جداً ودون قيود ضيقة) -->
     <div id="checkListTab" class="tab-content">
         <div class="card">
             <h3 style="color: #f59e0b;">📋 قائمة المراجعة</h3>
@@ -620,10 +612,8 @@
         </div>
     </div>
 
-    <!-- Tab 6: أخرى (أرباح فترة مع زر Reset + بضاعة الشاحنة + الدمج والربط) -->
     <div id="toolsTab" class="tab-content">
         <div class="grid-container">
-            <!-- أرباح فترة -->
             <div class="card">
                 <h3 style="color: #eab308;">📈 حساب الفايدة والأرباح بين تاريخين</h3>
                 <p style="font-size: 12px; color: #aaa; margin-bottom: 10px;">حدد تاريخ البداية وتاريخ النهاية لمعرفة إجمالي المبيعات، التكلفة، صافي الفايدة وعدد البونات:</p>
@@ -661,7 +651,6 @@
                 </div>
             </div>
 
-            <!-- بون المشتروات والبضاعة -->
             <div class="card">
                 <h3 style="color: var(--accent-green);">🚚 تسجيل بون بضاعة جديدة (وارد الشاحنة)</h3>
                 <input type="text" id="supplySupplierName" placeholder="اسم المورد / الشاحنة / رقم الفاتورة (اختياري)">
@@ -700,7 +689,6 @@
                 <div id="supplyBonsList" style="max-height: 350px; overflow-y: auto;"></div>
             </div>
 
-            <!-- ربط دمج المبيعات -->
             <div class="card">
                 <h3 style="color: var(--accent-purple);">🔗 ربط دمج المبيعات</h3>
                 <p style="font-size: 11.5px; color: #aaa; margin-bottom: 8px;">ربط سلعتين لتظهرا كسلعة واحدة في التقارير والمبيعات.</p>
@@ -729,7 +717,6 @@
                 <div id="bundlesList"></div>
             </div>
 
-            <!-- ربط بالعلبة الكبيرة -->
             <div class="card">
                 <h3 style="color: var(--accent-blue);">📦 ربط بالعلبة الكبيرة (الفتح التلقائي)</h3>
                 <p style="font-size: 11.5px; color: #aaa; margin-bottom: 8px;">اربط العلبة الفردية بالصندوق الكبير ليتم الخصم التلقائي.</p>
@@ -819,55 +806,6 @@
             if (!products[itemName]) return;
             products[itemName].stock += qtyToRestore;
         }
-
-        function autoClosePastDays() {
-            let pastUnclosedDates = new Set();
-            for (let i = 0; i < localStorage.length; i++) {
-                let key = localStorage.key(i);
-                if (key && (key.startsWith('sales_') || key.startsWith('bons_')) && !key.startsWith('mirror_') && !key.startsWith('archived_')) {
-                    let dateStr = key.replace('sales_', '').replace('bons_', '');
-                    if (dateStr && dateStr < today && dateStr.length >= 8) {
-                        pastUnclosedDates.add(dateStr);
-                    }
-                }
-            }
-
-            pastUnclosedDates.forEach(pastDate => {
-                let salesHistory = getSafeSalesToday('sales_' + pastDate);
-                let bonsHistory = getSafeStorageToday('bons_' + pastDate);
-
-                if (salesHistory.length > 0 || bonsHistory.length > 0) {
-                    let totalRevenue = 0, totalCost = 0;
-                    salesHistory.forEach(item => {
-                        totalRevenue += item.total || 0;
-                        totalCost += ((item.buyPrice || 0) * item.qty);
-                    });
-                    let netProfit = totalRevenue - totalCost;
-
-                    let zReport = {
-                        date: pastDate,
-                        revenue: totalRevenue,
-                        cost: totalCost,
-                        profit: netProfit,
-                        totalBons: bonsHistory.length,
-                        closedAt: 'تلقائي',
-                        salesItems: salesHistory,
-                        allBons: bonsHistory
-                    };
-
-                    localStorage.setItem('zreport_' + pastDate, JSON.stringify(zReport));
-                    localStorage.setItem('archived_sales_' + pastDate, JSON.stringify(salesHistory));
-                    localStorage.setItem('archived_bons_' + pastDate, JSON.stringify(bonsHistory));
-                }
-
-                localStorage.removeItem('sales_' + pastDate);
-                localStorage.removeItem('bons_' + pastDate);
-                localStorage.removeItem('mirror_sales_' + pastDate);
-                localStorage.removeItem('mirror_bons_' + pastDate);
-            });
-        }
-
-        autoClosePastDays();
 
         function parseTimeValue(timeStr) {
             if (!timeStr) return 0;
@@ -1178,7 +1116,6 @@
             document.getElementById('profitRangeResultCard').style.display = 'block';
         }
 
-        /* --- قواعد الدمج والربط --- */
         function saveBundleRule() {
             let bundleName = document.getElementById('bundleName').value.trim();
             let item1 = document.getElementById('bundleItem1').value.trim();
@@ -1473,7 +1410,6 @@
             document.getElementById('stockTotalSell').innerText = `${totalSellVal} د.ج`;
             document.getElementById('stockExpectedProfit').innerText = `${totalSellVal - totalBuyVal} د.ج`;
 
-            // تحديث جدول كل المبيعات الشامل داخل الستوك
             renderStockAllSalesTable();
         }
 
@@ -1886,7 +1822,6 @@
             }
         }
 
-        /* دوال إضافة بون منسي للأرشيف */
         function openHistoryBonModal(dateStr) {
             currentSelectedHistoryDate = dateStr;
             histBonTemp = [];
