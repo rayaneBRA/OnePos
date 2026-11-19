@@ -159,44 +159,61 @@
         .z-report-card {
             border: 2px solid #eab308;
             border-radius: 8px;
-            padding: 10px 5px;
+            padding: 8px 4px;
             background: #151b2b;
             margin-top: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            overflow-x: auto;
+            width: 100%;
+            overflow: hidden;
         }
         .z-report-title {
             text-align: center;
             color: #eab308;
             font-size: 18px;
             font-weight: 800;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             margin-top: 5px;
         }
         .z-report-table {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
             margin-top: 5px;
-            font-size: 13px;
-            white-space: nowrap;
+            font-size: 11px;
         }
+        .z-report-table th:nth-child(1),
+        .z-report-table td:nth-child(1) { width: 6%; }
+        .z-report-table th:nth-child(2),
+        .z-report-table td:nth-child(2) { width: 28%; }
+        .z-report-table th:nth-child(3),
+        .z-report-table td:nth-child(3) { width: 9%; }
+        .z-report-table th:nth-child(4),
+        .z-report-table td:nth-child(4) { width: 19%; }
+        .z-report-table th:nth-child(5),
+        .z-report-table td:nth-child(5) { width: 19%; }
+        .z-report-table th:nth-child(6),
+        .z-report-table td:nth-child(6) { width: 19%; }
         .z-report-table th {
             color: var(--accent-blue);
-            font-size: 13px;
-            padding: 10px 6px;
+            font-size: 11px;
+            padding: 8px 2px;
             border-bottom: 1px solid var(--border-color);
             text-align: center;
             font-weight: bold;
             background: transparent;
+            white-space: nowrap;
         }
         .z-report-table td {
-            padding: 12px 6px;
+            padding: 9px 2px;
             border-bottom: 1px solid var(--border-color);
             text-align: center;
             color: #fff;
             vertical-align: middle;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
+        /* تظليل الصفوف الزوجية لتسهيل القراءة */
         .z-report-table tbody tr:nth-child(even) {
             background: rgba(255, 255, 255, 0.03);
         }
@@ -207,7 +224,10 @@
             font-weight: bold;
             color: #fff;
             text-align: right !important;
-            padding-right: 10px !important;
+            padding-right: 4px !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
         }
         .z-report-profit {
             color: var(--accent-green);
@@ -486,7 +506,7 @@
                 <h3>📊 إجمالي اليوم (<span id="currentDate"></span>)</h3>
                 <div class="z-report-card">
                     <h4 class="z-report-title">Z-Report 📜</h4>
-                    <div style="overflow-x: auto;">
+                    <div>
                         <table id="dailyTable" class="z-report-table">
                             <thead>
                                 <tr>
@@ -555,10 +575,9 @@
                 <button class="action-btn" style="background:var(--accent-green); color:#000;" onclick="addStockQty()">➕ إضافة للستوك الحالي</button>
             </div>
 
-            <!-- تم تعديل هذه البطاقة لتأخذ كامل عرض الشاشة وبدون سكرول داخلي -->
-            <div class="card" style="grid-column: 1 / -1;">
+            <div class="card">
                 <h3>📋 قائمة المخزون الحالي</h3>
-                <div style="margin-top: 10px;">
+                <div style="max-height: 350px; overflow-y: auto;">
                     <table id="stockTable">
                         <thead><tr><th>#</th><th>السلعة</th><th>الستوك</th><th class="hide-profit-section">الشراء</th><th class="privacy-hide">البيع</th><th>إجراء</th></tr></thead>
                         <tbody></tbody>
@@ -1903,7 +1922,7 @@
 
                 <div class="z-report-card">
                     <h4 class="z-report-title">Z-Report 📜</h4>
-                    <div style="overflow-x:auto;">
+                    <div>
                         <table class="z-report-table">
                             <thead>
                                 <tr>
@@ -2107,32 +2126,81 @@
             alert('تم تسجيل السداد بنجاح!');
         }
 
+        function normalizeCheckList(items) {
+            if (!Array.isArray(items)) return [];
+            let groupedMap = new Map();
+            items.forEach(entry => {
+                if (!entry || !entry.name) return;
+                let cleanName = String(entry.name).trim();
+                let qtyNum = parseInt(entry.qty, 10);
+                if (!cleanName || isNaN(qtyNum) || qtyNum <= 0) return;
+
+                if (groupedMap.has(cleanName)) {
+                    groupedMap.get(cleanName).qty += qtyNum;
+                } else {
+                    groupedMap.set(cleanName, { name: cleanName, qty: qtyNum });
+                }
+            });
+
+            return Array.from(groupedMap.values()).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+        }
+
         function addToCheckList() {
-            let name = document.getElementById('checkProductSearch').value.trim();
-            let qty = parseInt(document.getElementById('checkQty').value);
+            let inputEl = document.getElementById('checkProductSearch');
+            let qtyEl = document.getElementById('checkQty');
+            let name = inputEl.value.trim();
+            let qty = parseInt(qtyEl.value, 10);
             if (!name || isNaN(qty) || qty <= 0) return;
-            checkListItems.push({ name, qty });
+
+            checkListItems = normalizeCheckList(checkListItems);
+            let existingIndex = checkListItems.findIndex(item => item.name === name);
+            if (existingIndex > -1) {
+                checkListItems[existingIndex].qty += qty;
+            } else {
+                checkListItems.push({ name, qty });
+            }
+
+            checkListItems = normalizeCheckList(checkListItems);
             localStorage.setItem('checkListItems', JSON.stringify(checkListItems));
-            document.getElementById('checkProductSearch').value = '';
+            inputEl.value = '';
+            qtyEl.value = '1';
+            renderCheckListUI();
+        }
+
+        function removeFromCheckList(name) {
+            checkListItems = normalizeCheckList(checkListItems).filter(item => item.name !== name);
+            localStorage.setItem('checkListItems', JSON.stringify(checkListItems));
             renderCheckListUI();
         }
 
         function renderCheckListUI() {
             let tbody = document.querySelector('#checkListTable tbody');
             if (!tbody) return;
+
+            checkListItems = normalizeCheckList(checkListItems);
+            localStorage.setItem('checkListItems', JSON.stringify(checkListItems));
+
             let html = '';
             let totalCost = 0;
             checkListItems.forEach((item, index) => {
                 let unitCost = products[item.name] ? products[item.name].buy : 0;
                 let lineCost = unitCost * item.qty;
                 totalCost += lineCost;
-                html += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.qty}</td><td class="hide-profit-section">${lineCost}</td><td><button class="btn-sm btn-delete" onclick="checkListItems.splice(${index},1); localStorage.setItem('checkListItems', JSON.stringify(checkListItems)); renderCheckListUI();">X</button></td></tr>`;
+                let escapedName = item.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                html += `<tr><td>${index + 1}</td><td><b>${item.name}</b></td><td>${item.qty}</td><td class="hide-profit-section">${fmtNum(lineCost)}</td><td><button class="btn-sm btn-delete" onclick="removeFromCheckList('${escapedName}')">X</button></td></tr>`;
             });
+            if (!html) {
+                html = `<tr><td colspan="5" style="text-align:center; color:#888;">قائمة المراجعة فارغة</td></tr>`;
+            }
             tbody.innerHTML = html;
-            document.getElementById('checkListTotalCost').innerText = `${totalCost} د.ج`;
+            document.getElementById('checkListTotalCost').innerText = `${fmtNum(totalCost)} د.ج`;
         }
 
-        function clearCheckList() { checkListItems = []; localStorage.setItem('checkListItems', JSON.stringify(checkListItems)); renderCheckListUI(); }
+        function clearCheckList() {
+            checkListItems = [];
+            localStorage.setItem('checkListItems', JSON.stringify(checkListItems));
+            renderCheckListUI();
+        }
 
         function showReceipt(dateStr, bonIndex, source) {
             let bons = source === 'today' ? getSafeStorageToday('bons_' + dateStr) : getSafeJSON('archived_bons_' + dateStr, []);
