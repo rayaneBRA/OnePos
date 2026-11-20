@@ -446,7 +446,6 @@
         <div class="tab-btn" onclick="switchTab('stockTab', this)">📦 الستوك</div>
         <div class="tab-btn" onclick="switchTab('historyTab', this)">📜 المبيعات</div>
         <div class="tab-btn" onclick="switchTab('debtTab', this)">📝 الديون</div>
-        <div class="tab-btn" onclick="switchTab('checkListTab', this)">📋 المراجعة</div>
         <div class="tab-btn" onclick="switchTab('toolsTab', this)" style="border-color: var(--accent-purple);">🛠️ أخرى</div>
     </div>
 
@@ -575,9 +574,9 @@
                 <button class="action-btn" style="background:var(--accent-green); color:#000;" onclick="addStockQty()">➕ إضافة للستوك الحالي</button>
             </div>
 
-            <div class="card">
+            <div class="card" style="grid-column: 1 / -1;">
                 <h3>📋 قائمة المخزون الحالي</h3>
-                <div style="max-height: 350px; overflow-y: auto;">
+                <div style="overflow-x: auto;">
                     <table id="stockTable">
                         <thead><tr><th>#</th><th>السلعة</th><th>الستوك</th><th class="hide-profit-section">الشراء</th><th class="privacy-hide">البيع</th><th>إجراء</th></tr></thead>
                         <tbody></tbody>
@@ -633,29 +632,6 @@
                 <div class="stat-box privacy-hide"><span>إجمالي الديون:</span><span id="debtTotalSell">0 د.ج</span></div>
                 <div class="stat-box profit privacy-hide hide-profit-section"><span>إجمالي الفايدة المعلقة:</span><span id="debtTotalProfit">0 د.ج</span></div>
             </div>
-        </div>
-    </div>
-
-    <div id="checkListTab" class="tab-content">
-        <div class="card">
-            <h3 style="color: #f59e0b;">📋 قائمة المراجعة</h3>
-            <div style="display: flex; gap: 5px;">
-                <div class="search-box-wrapper" style="flex:1;">
-                    <input type="text" id="checkProductSearch" placeholder="🔍 ابحث عن سلعة..." autocomplete="off" oninput="filterProducts('check', this.value)">
-                    <div id="checkSuggestions" class="custom-suggestions"></div>
-                </div>
-                <input type="number" id="checkQty" value="1" placeholder="العدد" style="width: 70px;">
-            </div>
-            <button class="action-btn" style="background: #f59e0b; color: #000;" onclick="addToCheckList()">+ إضافة للقائمة</button>
-            
-            <div style="margin-top: 10px;">
-                <table id="checkListTable">
-                    <thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th class="hide-profit-section">التكلفة</th><th>إجراء</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-            <div class="stat-box hide-profit-section" style="margin-top: 10px;"><span>إجمالي التكلفة:</span><span id="checkListTotalCost">0 د.ج</span></div>
-            <button class="action-btn" style="background: #4b5563; color: white; padding: 8px; font-size: 12px; margin-top: 10px;" onclick="clearCheckList()">مسح القائمة</button>
         </div>
     </div>
 
@@ -789,6 +765,26 @@
 
                 <h3 style="margin-top: 15px; color: var(--accent-blue); font-size:13px;">📋 السلع المربوطة</h3>
                 <div id="boxLinksList"></div>
+            </div>
+            <div class="card">
+                <h3 style="color: #f59e0b;">📋 قائمة المراجعة</h3>
+                <div style="display: flex; gap: 5px;">
+                    <div class="search-box-wrapper" style="flex:1;">
+                        <input type="text" id="checkProductSearch" placeholder="🔍 ابحث عن سلعة..." autocomplete="off" oninput="filterProducts('check', this.value)">
+                        <div id="checkSuggestions" class="custom-suggestions"></div>
+                    </div>
+                    <input type="number" id="checkQty" value="1" placeholder="العدد" style="width: 70px;">
+                </div>
+                <button class="action-btn" style="background: #f59e0b; color: #000;" onclick="addToCheckList()">+ إضافة للقائمة</button>
+                
+                <div style="margin-top: 10px;">
+                    <table id="checkListTable">
+                        <thead><tr><th>#</th><th>السلعة</th><th>العدد</th><th class="hide-profit-section">التكلفة</th><th>إجراء</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="stat-box hide-profit-section" style="margin-top: 10px;"><span>إجمالي التكلفة:</span><span id="checkListTotalCost">0 د.ج</span></div>
+                <button class="action-btn" style="background: #4b5563; color: white; padding: 8px; font-size: 12px; margin-top: 10px;" onclick="clearCheckList()">مسح القائمة</button>
             </div>
         </div>
     </div>
